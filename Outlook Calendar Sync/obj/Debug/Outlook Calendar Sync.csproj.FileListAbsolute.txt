@@ -1,0 +1,46 @@
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\client_secret.json
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Outlook Calendar Sync.dll.config
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Outlook Calendar Sync.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Outlook Calendar Sync.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Outlook Calendar Sync.dll.manifest
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Outlook Calendar Sync.vsto
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.PlatformServices.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Calendar.v3.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Core.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.PlatformServices.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.Common.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.Outlook.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.Office.Tools.v4.0.Framework.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Microsoft.VisualStudio.Tools.Applications.Runtime.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Newtonsoft.Json.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\NodaTime.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Zlib.Portable.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.PlatformServices.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.PlatformServices.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Calendar.v3.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Calendar.v3.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Core.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Core.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.PlatformServices.pdb
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.PlatformServices.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Newtonsoft.Json.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\NodaTime.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\bin\Debug\Zlib.Portable.xml
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csprojResolveAssemblyReference.cache
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.CompareForm.resources
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.DifferencesForm.resources
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.Properties.Resources.resources
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.SyncerForm.resources
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.SyncRibbon.resources
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csproj.GenerateResource.Cache
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.dll
+d:\documents\visual studio 2015\Projects\Outlook Calendar Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.pdb
