@@ -22,6 +22,7 @@ namespace Outlook_Calendar_Sync {
 
             if ( File.Exists( _filePath ) ) {
                 var fileContents = File.ReadAllText( _filePath );
+                var re = Path.GetFullPath( _filePath );
 
                 m_data = JsonConvert.DeserializeObject<List<string>>( fileContents ) ?? new List<string>();
             } else

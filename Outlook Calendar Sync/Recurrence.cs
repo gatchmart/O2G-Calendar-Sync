@@ -186,6 +186,9 @@ namespace Outlook_Calendar_Sync {
                         case "INTERVAL":
                             Interval = int.Parse( split[1] );
                             break;
+                        case "COUNT":
+                            Occurrences = int.Parse( split[1] );
+                            break;
                     } // switch
                 } // foreach
 
@@ -236,104 +239,50 @@ namespace Outlook_Calendar_Sync {
             Type = (RecurrenceType)pattern.RecurrenceType;
         }
 
-        public void GetOutlookPattern( ref RecurrencePattern pattern) {
+        public void GetOutlookPattern( ref RecurrencePattern pattern ) {
             switch ( Type ) {
                 case RecurrenceType.Daily:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursDaily;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
+
+                    AddOutlookRecurrenceData( ref pattern );
                     break;
                 case RecurrenceType.Weekly:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursWeekly;
                     pattern.DayOfWeekMask = (OlDaysOfWeek) DaysOfTheWeekMask;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
+
+                    AddOutlookRecurrenceData( ref pattern );
                     break;
                 case RecurrenceType.Monthly:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursMonthly;
                     if ( DayOfMonth != 0 )
                         pattern.DayOfMonth = DayOfMonth;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
+
+                    AddOutlookRecurrenceData( ref pattern );
                     break;
                 case RecurrenceType.MonthNth:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursMonthNth;
                     pattern.DayOfWeekMask = (OlDaysOfWeek)DaysOfTheWeekMask;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
+
+                    AddOutlookRecurrenceData( ref pattern );
                     if ( Instance != 0 )
                         pattern.Instance = Instance;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
                     break;
                 case RecurrenceType.Yearly:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursYearly;
                     if ( DayOfMonth != 0 )
                         pattern.DayOfMonth = DayOfMonth;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
                     if ( MonthOfYear != 0 )
                         pattern.MonthOfYear = MonthOfYear;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
+
+                    AddOutlookRecurrenceData( ref pattern );
                     break;
                 case RecurrenceType.YearNth:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursYearNth;
                     pattern.DayOfWeekMask = (OlDaysOfWeek)DaysOfTheWeekMask;
-                    pattern.Duration = Duration;
-                    if ( End != null )
-                        pattern.EndTime = DateTime.Parse( End );
-                    if ( Start != null )
-                        pattern.StartTime = DateTime.Parse( Start );
-                    pattern.Interval = Interval;
+
+                    AddOutlookRecurrenceData( ref pattern );
                     if ( Instance != 0 )
                         pattern.Instance = Instance;
-                    pattern.NoEndDate = NoEndDate;
-                    if ( Occurrences != 0 )
-                        pattern.Occurrences = Occurrences;
-                    pattern.PatternStartDate = DateTime.Parse( PatternStart );
-                    pattern.PatternEndDate = DateTime.Parse( PatternEnd );
                     break;
             }
         }
@@ -367,9 +316,11 @@ namespace Outlook_Calendar_Sync {
                     break;
             }
 
-            builder.Append( "UNTIL=" );
-            var date = DateTime.ParseExact( PatternEnd, "yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture );
-            builder.Append( date.ToUniversalTime().ToString( "yyyyMMddTHHmmssZ" ) + ";" );
+            if ( PatternEnd != null ) {
+                builder.Append( "UNTIL=" );
+                var date = DateTime.ParseExact( PatternEnd, "yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture );
+                builder.Append( date.ToUniversalTime().ToString( "yyyyMMddTHHmmssZ" ) + ";" );
+            }
 
             if ( DaysOfTheWeekMask != 0 ) {
                 builder.Append( "BYDAY=" );
@@ -433,6 +384,21 @@ namespace Outlook_Calendar_Sync {
             PatternEnd = PatternEnd.Remove( PatternEnd.IndexOf( "T" ) );
             PatternEnd += "T" + e;
 
+        }
+
+        private void AddOutlookRecurrenceData( ref RecurrencePattern pattern ) {
+            pattern.Duration = Duration;
+            if ( End != null )
+                pattern.EndTime = DateTime.Parse( End );
+            if ( Start != null )
+                pattern.StartTime = DateTime.Parse( Start );
+            pattern.Interval = Interval;
+            pattern.NoEndDate = NoEndDate;
+            if ( Occurrences != 0 )
+                pattern.Occurrences = Occurrences;
+            pattern.PatternStartDate = DateTime.Parse( PatternStart );
+            if ( PatternEnd != null )
+                pattern.PatternEndDate = DateTime.Parse( PatternEnd );
         }
     }
 }

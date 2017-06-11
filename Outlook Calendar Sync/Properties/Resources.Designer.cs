@@ -71,7 +71,7 @@ namespace Outlook_Calendar_Sync.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to false.
+        ///   Looks up a localized string similar to true.
         /// </summary>
         internal static string UpdateRecurrance {
             get {

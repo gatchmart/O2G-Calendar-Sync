@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
-using Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
     public partial class SyncerForm : Form {
@@ -58,6 +58,7 @@ namespace Outlook_Calendar_Sync {
                                 "It appears the calendar event '" + calendarItem.Subject +
                                 "' was deleted from Google. Would you like to remove it from Outlook also?", "Delete Event?",
                                 MessageBoxButtons.YesNo ) == DialogResult.Yes ) {
+
                             calendarItem.Action |= CalendarItemAction.OutlookDelete;
                             finalList.Add( calendarItem );
                         }
@@ -204,6 +205,8 @@ namespace Outlook_Calendar_Sync {
         private void button1_Click( object sender, EventArgs e ) {
             OutlookSync.Syncer.PullListOfAppointments();
             OutlookSync.Syncer.PullCalendars();
+
+            var str = Application.CommonAppDataPath;
         }
     }
 }

@@ -238,15 +238,23 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         /// <returns>Google Event of the CalendarItem</returns>
         public Event GetGoogleCalendarEvent() {
-            var st = new EventDateTime {
-                DateTime = DateTime.Parse( Start ),
-                TimeZone = StartTimeZone
-            };
+            var st = IsAllDayEvent
+                ? new EventDateTime {
+                    Date = Start.Substring( 0, 10 )
+                }
+                : new EventDateTime {
+                    DateTime = DateTime.Parse( Start ),
+                    TimeZone = StartTimeZone
+                };
 
-            var en = new EventDateTime {
-                DateTime = DateTime.Parse( End ),
-                TimeZone = EndTimeZone
-            };
+            var en = IsAllDayEvent
+                ? new EventDateTime {
+                    Date = End.Substring( 0, 10 )
+                }
+                : new EventDateTime {
+                    DateTime = DateTime.Parse( End ),
+                    TimeZone = EndTimeZone
+                };
 
             var e = new Event {
                 Summary = Subject, Description = Body, Start = st, End = en, Location = Location
@@ -430,9 +438,11 @@ namespace Outlook_Calendar_Sync {
                 if ( !Attendees.All( other.Attendees.Contains ) )
                     Changes |= CalendarItemChanges.Attendees;
 
-            if ( Recurrence != null && other.Recurrence != null )
+            if ( Recurrence != null && other.Recurrence != null ) {
                 if ( Recurrence.GetGoogleRecurrenceString().Equals( other.Recurrence.GetGoogleRecurrenceString() ) )
                     Changes |= CalendarItemChanges.Recurrence;
+            } else if ( Recurrence != null || other.Recurrence != null)
+                Changes |= CalendarItemChanges.Recurrence;
 
             if ( !iCalID.Equals( other.iCalID ) )
                 Changes |= CalendarItemChanges.CalId;

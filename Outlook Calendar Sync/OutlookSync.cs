@@ -34,19 +34,18 @@ namespace Outlook_Calendar_Sync {
 
             } catch ( Exception ex ) {
                 MessageBox.Show( "Outlook Sync: The following error occurred: " + ex.Message );
-            }
+            } 
         }
 
+        /// <summary>
+        /// Pull the list of calendars from Outlook
+        /// </summary>
+        /// <returns>List of string names.</returns>
         public List<string> PullCalendars() {
-            var folders = Application.Session.Folders;
-            var list = new List<string>();
+            var list = new List<string> {m_folder.Name};
 
-            foreach ( Folder folder in folders ) {
-                foreach ( Folder f in folder.Folders ) {
-                    if (f.Name.StartsWith( "Calendar" ))
-                        list.Add( folder.Name + " - " + f.Name );
-                }
-            }
+            foreach ( Folder f in m_folder.Folders )
+                list.Add( f.Name );
 
             return list;
         }
@@ -109,7 +108,7 @@ namespace Outlook_Calendar_Sync {
         public void UpdateAppointment( CalendarItem ev ) {
 
             if ( ev.Recurrence != null && Resources.UpdateRecurrance.Equals( "true" ) ) {
-                throw new NotImplementedException("Recurrance update is not fully incorported yet. This will not effect single event updates.");
+                //throw new NotImplementedException("Recurrance update is not fully incorported yet. This will not effect single event updates.");
 
                 // TODO: Find out why this item in not found when using recurring events
 
@@ -129,8 +128,13 @@ namespace Outlook_Calendar_Sync {
 
                 foreach ( AppointmentItem appointmentItem in item ) {
                     if ( ev.Recurrence != null ) {
-                        AppointmentItem i =
-                            appointmentItem.GetRecurrencePattern().GetOccurrence( DateTime.Parse( ev.Start ) );
+                        AppointmentItem i = null;
+                        if ( appointmentItem.RecurrenceState == OlRecurrenceState.olApptNotRecurring ) {
+                            appointmentItem.GetRecurrencePattern();
+                            i = appointmentItem;
+                        } else
+                            i = appointmentItem.GetRecurrencePattern().GetOccurrence( DateTime.Parse( ev.Start ) );
+
                         ev.GetOutlookAppointment( i );
                         i.Save();
                     }
