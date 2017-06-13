@@ -111,7 +111,6 @@ namespace Outlook_Calendar_Sync {
                 //throw new NotImplementedException("Recurrance update is not fully incorported yet. This will not effect single event updates.");
 
                 // TODO: Find out why this item in not found when using recurring events
-
                 //var filter = "[Start] >= '" + DateTime.Parse( ev.Start ).ToString( "g" ) + "' AND [End] <= '" +
                 //             DateTime.Parse( ev.End ).ToString( "g" ) + "'";
 
@@ -141,9 +140,6 @@ namespace Outlook_Calendar_Sync {
 
                     ev.Action &= ~CalendarItemAction.GeneratedId;
                     ev.Action &= ~CalendarItemAction.OutlookUpdate;
-                    //var i = ev.GetOutlookAppointment( appointmentItem );
-                    //i.Body = "updated";
-                    // i.Save();
                 }
 #pragma warning restore 162
             } else {
@@ -159,14 +155,9 @@ namespace Outlook_Calendar_Sync {
                     : "[ID] = '" + ev.ID + "'";
 
                     Items items = m_folder.Items;
-                    //items.IncludeRecurrences = true;
                     items.Sort( "[Subject]", Type.Missing );
 
                     Items item = items.Restrict( id );
-
-
-                    //var items = m_folder.Items;
-                    //var item = items.Restrict( id ).GetFirst();
                     foreach ( AppointmentItem appointmentItem in item ) {
                         if ( appointmentItem != null ) {
                             ev.Action &= ~CalendarItemAction.GeneratedId;

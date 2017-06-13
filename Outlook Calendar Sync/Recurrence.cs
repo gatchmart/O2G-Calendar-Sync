@@ -386,6 +386,56 @@ namespace Outlook_Calendar_Sync {
 
         }
 
+        public override string ToString() {
+            StringBuilder builder = new StringBuilder();
+
+            builder.AppendLine( "\t\tPattern Start: " + PatternStart );
+            builder.AppendLine( "\t\tPattern End: " + PatternEnd );
+            builder.AppendLine( "\t\tDuration: " + Duration );
+            builder.AppendLine( "\t\tOccurrences: " + Occurrences );
+            builder.AppendLine( "\t\tInterval: " + Interval );
+            builder.AppendLine( "\t\tInstance: " + Instance );
+            builder.AppendLine( "\t\tStart: " + Start );
+            builder.AppendLine( "\t\tEnd: " + End );
+            builder.AppendLine( "\t\tMonth of Year: " + MonthOfYear );
+            builder.AppendLine( "\t\tDay of Month: " + DayOfMonth );
+            builder.AppendLine( "\t\tNo End Date: " + ( NoEndDate ? "Yes" : "No" ) );
+
+            if ( Type == RecurrenceType.Daily )
+                builder.AppendLine( "\t\tDaily Recurrence" );
+            else if ( Type == RecurrenceType.MonthNth )
+                builder.AppendLine( "\t\tMonthNth Recurrence" );
+            else if ( Type == RecurrenceType.Monthly)
+                builder.AppendLine( "\t\tMonthly Recurrence" );
+            else if ( Type == RecurrenceType.Weekly )
+                builder.AppendLine( "\t\tWeekly Recurrence" );
+            else if ( Type == RecurrenceType.YearNth )
+                builder.AppendLine( "\t\tYearNth Recurrence" );
+            else if ( Type == RecurrenceType.Yearly )
+                builder.AppendLine( "\t\tYearly Recurrence" );
+
+            if ( DaysOfTheWeekMask != 0 ) {
+                builder.Append( "\t\t" );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Monday ) )
+                    builder.Append( "Monday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Tuesday ) )
+                    builder.Append( "Tuesday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Wednesday ) )
+                    builder.Append( "Wednesday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Thursday ) )
+                    builder.Append( "Thursday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Friday ) )
+                    builder.Append( "Friday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Saturday ) )
+                    builder.Append( "Saturday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Sunday ) )
+                    builder.Append( "Sunday | " );
+                builder.Remove( builder.Length - 2, 2 );
+            }
+
+            return builder.ToString();
+        }
+
         private void AddOutlookRecurrenceData( ref RecurrencePattern pattern ) {
             pattern.Duration = Duration;
             if ( End != null )
@@ -400,5 +450,6 @@ namespace Outlook_Calendar_Sync {
             if ( PatternEnd != null )
                 pattern.PatternEndDate = DateTime.Parse( PatternEnd );
         }
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
 
@@ -19,8 +20,10 @@ namespace Outlook_Calendar_Sync {
         public void StartUpdate( List<CalendarItem> list ) {
             if ( m_multiThreaded )
                 calendarUpdate_WORKER.RunWorkerAsync( list );
-            else
+            else {
                 SubmitChanges( list );
+                MessageBox.Show( "Synchronization has been completed." );
+            }
         }
 
         private void Sync_BTN_Click( object sender, EventArgs e ) {
@@ -38,6 +41,12 @@ namespace Outlook_Calendar_Sync {
 
             // Check to see what events need to be added to google from outlook
             var finalList = CompareLists( outlookList, googleList );
+
+#if DEBUG
+            WriteToLog( outlookList, "Outlook List Log.rtf" );
+            WriteToLog( googleList, "Google List Log.rtf" );
+            WriteToLog( finalList, "Final List Log.rtf" );
+#endif
 
             var compare = new CompareForm();
             compare.SetParent( this );
@@ -195,7 +204,7 @@ namespace Outlook_Calendar_Sync {
             // If these threads are different, it returns true.
             if ( progressBar1.InvokeRequired ) {
                 var d = new SetProgressCallback( SetProgress );
-                //Invoke( d, new[] { progress } );
+                Invoke( d, new[] { progress } );
             } else {
                 progressBar1.Value = progress;
             }
@@ -208,5 +217,16 @@ namespace Outlook_Calendar_Sync {
 
             var str = Application.CommonAppDataPath;
         }
+
+#if DEBUG
+        private void WriteToLog(List<CalendarItem> items, string file) {
+            StringBuilder builder = new StringBuilder();
+
+            foreach ( var calendarItem in items )
+                builder.AppendLine( calendarItem.ToString() );
+
+            File.WriteAllText( Application.UserAppDataPath + "\\" + file, builder.ToString() );
+        }
+#endif
     }
 }
