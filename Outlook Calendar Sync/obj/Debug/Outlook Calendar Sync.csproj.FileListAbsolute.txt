@@ -81,7 +81,6 @@ D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar 
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Newtonsoft.Json.xml
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\NodaTime.xml
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Zlib.Portable.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csprojResolveAssemblyReference.cache
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.CompareForm.resources
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.DifferencesForm.resources
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.Properties.Resources.resources
@@ -90,3 +89,5 @@ D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar 
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csproj.GenerateResource.Cache
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.dll
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.pdb
+D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csprojResolveAssemblyReference.cache
+D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.SettingsForm.resources

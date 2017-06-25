@@ -1,52 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
+using Settings = Outlook_Calendar_Sync.Properties.Settings;
 
 namespace Outlook_Calendar_Sync {
     public partial class SyncerForm : Form {
 
+        public SyncRibbon Ribbon { get; set; }
+
         private delegate void SetProgressCallback( int progress );
 
         private CalendarList m_googleCalendars;
+        private readonly Syncer m_syncer;
         private bool m_multiThreaded = false;
 
         public SyncerForm() {
             InitializeComponent();
+            m_syncer = Syncer.Instance;
         }
 
         public void StartUpdate( List<CalendarItem> list ) {
             if ( m_multiThreaded )
                 calendarUpdate_WORKER.RunWorkerAsync( list );
             else {
-                SubmitChanges( list );
+                m_syncer.SubmitChanges( list, calendarUpdate_WORKER );
                 MessageBox.Show( "Synchronization has been completed." );
             }
         }
 
         private void Sync_BTN_Click( object sender, EventArgs e ) {
-            List<CalendarItem> outlookList;
-            List<CalendarItem> googleList;
 
-            if ( checkBox1.Checked ) {
-                outlookList = OutlookSync.Syncer.PullListOfAppointmentsByDate( Start_DTP.Value, End_DTP.Value );
-                googleList = GoogleSync.Syncer.PullListOfAppointmentsByDate( Start_DTP.Value, End_DTP.Value );
-            }
-            else {
-                outlookList = OutlookSync.Syncer.PullListOfAppointments();
-                googleList = GoogleSync.Syncer.PullListOfAppointments();
-            }
-
-            // Check to see what events need to be added to google from outlook
-            var finalList = CompareLists( outlookList, googleList );
-
-#if DEBUG
-            WriteToLog( outlookList, "Outlook List Log.rtf" );
-            WriteToLog( googleList, "Google List Log.rtf" );
-            WriteToLog( finalList, "Final List Log.rtf" );
-#endif
+            var finalList = m_syncer.GetFinalList( checkBox1.Checked, Start_DTP.Value, End_DTP.Value );
 
             var compare = new CompareForm();
             compare.SetParent( this );
@@ -55,84 +41,8 @@ namespace Outlook_Calendar_Sync {
             
         }
 
-        private List<CalendarItem> CompareLists( List<CalendarItem> outlookList, List<CalendarItem> googleList ) {
-            var finalList = new List<CalendarItem>();
-
-            foreach ( var calendarItem in outlookList ) {
-                if ( !googleList.Contains( calendarItem ) ) {
-
-                    if ( Archiver.Instance.Contains( calendarItem.ID ) ) {
-                        if (
-                            MessageBox.Show(
-                                "It appears the calendar event '" + calendarItem.Subject +
-                                "' was deleted from Google. Would you like to remove it from Outlook also?", "Delete Event?",
-                                MessageBoxButtons.YesNo ) == DialogResult.Yes ) {
-
-                            calendarItem.Action |= CalendarItemAction.OutlookDelete;
-                            finalList.Add( calendarItem );
-                        }
-                    }
-                    else {
-
-                        if ( calendarItem.Recurrence != null ) {
-                            if ( calendarItem.IsFirstOccurence  ) {
-                                calendarItem.Action |= CalendarItemAction.GoogleAdd;
-                                finalList.Add( calendarItem );
-                            }
-                        }
-                        else {
-                            calendarItem.Action |= CalendarItemAction.GoogleAdd;
-                            finalList.Add( calendarItem );
-                        }
-                    }
-                }
-                else {
-                    var item = googleList.Find( x => x.ID.Equals( calendarItem.ID ) );
-                    item.Action |= CalendarItemAction.ContentsEqual;
-
-                    if ( !item.Equals( calendarItem ) ) {
-
-                        var result = DifferencesForm.Show( calendarItem, item );
-
-                        if ( result == DialogResult.Yes ) {
-                            calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                            finalList.Add( calendarItem );
-                        }
-                        else if ( result == DialogResult.No ) {
-                            item.Action |= CalendarItemAction.OutlookUpdate;
-                            finalList.Add( item );
-                        }
-                    }
-                }
-
-            }
-
-            foreach ( var calendarItem in googleList ) {
-                if ( !outlookList.Contains( calendarItem ) ) {
-                    if ( Archiver.Instance.Contains( calendarItem.ID ) ) {
-                        if (
-                            MessageBox.Show(
-                                "It appears the calendar event '" + calendarItem.Subject +
-                                "' was deleted from Outlook. Would you like to remove it from Google also?",
-                                "Delete Event?",
-                                MessageBoxButtons.YesNo ) == DialogResult.Yes ) {
-                            calendarItem.Action |= CalendarItemAction.GoogleDelete;
-                            finalList.Add( calendarItem );
-                        }
-                    }
-                    else {
-                        calendarItem.Action |= CalendarItemAction.OutlookAdd;
-                        finalList.Add( calendarItem );
-                    }
-                }
-            }
-
-            return finalList;
-        }
-
         private void SyncerForm_Load( object sender, EventArgs e ) {
             // Get the list of Google Calendars and load them into googleCal_CB
-            
             m_googleCalendars = GoogleSync.Syncer.PullCalendars();
 
             foreach ( var calendarListEntry in m_googleCalendars.Items )
@@ -142,9 +52,8 @@ namespace Outlook_Calendar_Sync {
             var folders = OutlookSync.Syncer.PullCalendars();
 
             foreach ( var folder in folders ) { 
-                outlookCal_CB.Items.Add( folder );
+                outlookCal_CB.Items.Add( folder.Name );
             }
-
         }
 
         private void checkBox1_CheckedChanged( object sender, EventArgs e ) {
@@ -153,41 +62,10 @@ namespace Outlook_Calendar_Sync {
         }
 
         #region BackgroundWorker Methods
-        private void SubmitChanges( List<CalendarItem> items ) {
-            int currentCount = 0;
-
-            foreach ( var calendarItem in items ) {
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookAdd ) )
-                    OutlookSync.Syncer.AddAppointment( calendarItem );
-
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleAdd ) )
-                    GoogleSync.Syncer.AddAppointment( calendarItem );
-
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookUpdate ) )
-                    OutlookSync.Syncer.UpdateAppointment( calendarItem );
-
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleUpdate ) )
-                    GoogleSync.Syncer.UpdateAppointment( calendarItem );
-
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleDelete ) )
-                    GoogleSync.Syncer.DeleteAppointment( calendarItem );
-
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookDelete ) )
-                    OutlookSync.Syncer.DeleteAppointment( calendarItem );
-
-                currentCount++;
-                var progress = (int)( currentCount / (float)items.Count * 100 );
-                calendarUpdate_WORKER.ReportProgress( progress );
-            }
-
-            Archiver.Instance.Save();
-
-            calendarUpdate_WORKER.ReportProgress( 100 );
-        }
 
         private void calendarUpdate_WORKER_DoWork( object sender, System.ComponentModel.DoWorkEventArgs e ) {
             List<CalendarItem> list = (List<CalendarItem>)e.Argument;
-            SubmitChanges( list );
+            m_syncer.SubmitChanges( list, calendarUpdate_WORKER );
         }
 
         private void calendarUpdate_WORKER_ProgressChanged( object sender, System.ComponentModel.ProgressChangedEventArgs e ) {
@@ -212,21 +90,26 @@ namespace Outlook_Calendar_Sync {
         #endregion BackgroundWorker Methods
 
         private void button1_Click( object sender, EventArgs e ) {
-            OutlookSync.Syncer.PullListOfAppointments();
-            OutlookSync.Syncer.PullCalendars();
-
-            var str = Application.CommonAppDataPath;
+            if ( File.Exists( Application.UserAppDataPath + "\\" + "calendarItems.txt" ) ) {
+                File.Delete( Application.UserAppDataPath + "\\" + "calendarItems.txt" );
+                Settings.Default.IsInitialLoad = true;
+                Settings.Default.Save();
+                MessageBox.Show( this, "Reset Initial Load", "Reset", MessageBoxButtons.OK );
+            }
         }
 
-#if DEBUG
-        private void WriteToLog(List<CalendarItem> items, string file) {
-            StringBuilder builder = new StringBuilder();
 
-            foreach ( var calendarItem in items )
-                builder.AppendLine( calendarItem.ToString() );
+        private void SyncerForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if ( e.CloseReason == CloseReason.UserClosing )
+            {
+                e.Cancel = true;
+                Hide();
 
-            File.WriteAllText( Application.UserAppDataPath + "\\" + file, builder.ToString() );
+                m_syncer.Action = 0;
+                m_syncer.PerformActionToAll = false;
+            }
         }
-#endif
+
     }
 }

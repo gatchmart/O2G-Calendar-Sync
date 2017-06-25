@@ -9,6 +9,12 @@ using Application = Microsoft.Office.Interop.Outlook.Application;
 using Exception = System.Exception;
 
 namespace Outlook_Calendar_Sync {
+
+    struct OutlookFolder {
+        public string Name;
+        public string EntryID;
+    }
+
     class OutlookSync {
 
         public static OutlookSync Syncer => m_instance ?? ( m_instance = new OutlookSync() );
@@ -17,7 +23,7 @@ namespace Outlook_Calendar_Sync {
 
         public Application Application { get; set; }
 
-        private Folder m_folder;
+        private readonly Folder m_folder;
 
         public OutlookSync() {
             Application = new Application();
@@ -41,11 +47,11 @@ namespace Outlook_Calendar_Sync {
         /// Pull the list of calendars from Outlook
         /// </summary>
         /// <returns>List of string names.</returns>
-        public List<string> PullCalendars() {
-            var list = new List<string> {m_folder.Name};
+        public List<OutlookFolder> PullCalendars() {
+            var list = new List<OutlookFolder> { new OutlookFolder { Name = m_folder.Name, EntryID = m_folder.EntryID } };
 
             foreach ( Folder f in m_folder.Folders )
-                list.Add( f.Name );
+                list.Add( new OutlookFolder { Name = f.Name, EntryID = f.EntryID } );
 
             return list;
         }

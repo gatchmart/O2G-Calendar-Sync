@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.Office.Interop.Outlook;
-using TimeZone = System.TimeZone;
 
 namespace Outlook_Calendar_Sync {
 
@@ -226,10 +224,20 @@ namespace Outlook_Calendar_Sync {
 
                 foreach ( var attendee in Attendees ) {
                     var recipt = item.Recipients.Add( attendee.Name );
-                    recipt.AddressEntry.Address = attendee.Email;
-                    recipt.Type = attendee.Required
-                        ? (int) OlMeetingRecipientType.olRequired
-                        : (int) OlMeetingRecipientType.olOptional;
+                    bool result = recipt.Resolve();
+
+                    if ( !result ) {
+                        ContactItem contact = new ContactItem( attendee.Name, attendee.Email );
+                        result = contact.CreateContact();
+                    }
+
+                    result &= recipt.Resolve();
+                    if ( result ) {
+                        recipt.AddressEntry.Address = attendee.Email;
+                        recipt.Type = attendee.Required
+                            ? (int) OlMeetingRecipientType.olRequired
+                            : (int) OlMeetingRecipientType.olOptional;
+                    }
                 }
 
                 return item;
@@ -331,7 +339,7 @@ namespace Outlook_Calendar_Sync {
             if ( ev.Attendees != null ) {
                 foreach ( var eventAttendee in ev.Attendees ) {
                     Attendees.Add( new Attendee {
-                        Name = eventAttendee.DisplayName, Email = eventAttendee.Email, Required = !( eventAttendee.Optional ?? true )
+                        Name = eventAttendee.DisplayName ?? "" , Email = eventAttendee.Email ?? "", Required = !( eventAttendee.Optional ?? true )
                     } );
                 }
             }

@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Windows.Forms;
 using Newtonsoft.Json;
 
 namespace Outlook_Calendar_Sync {
 
     internal class Archiver {
 
-        private const string _filePath = "calendarItems.txt";
+        private string m_filePath = Application.UserAppDataPath + "\\" + "calendarItems.txt";
 
         public static Archiver Instance => _instance ?? ( _instance = new Archiver() );
 
@@ -20,9 +21,9 @@ namespace Outlook_Calendar_Sync {
 
         public void Load() { 
 
-            if ( File.Exists( _filePath ) ) {
-                var fileContents = File.ReadAllText( _filePath );
-                var re = Path.GetFullPath( _filePath );
+            if ( File.Exists( m_filePath ) ) {
+                var fileContents = File.ReadAllText( m_filePath );
+                var re = Path.GetFullPath( m_filePath );
 
                 m_data = JsonConvert.DeserializeObject<List<string>>( fileContents ) ?? new List<string>();
             } else
@@ -32,7 +33,7 @@ namespace Outlook_Calendar_Sync {
 
         public void Save() {
             var data = JsonConvert.SerializeObject( m_data );
-            File.WriteAllText( _filePath, data );
+            File.WriteAllText( m_filePath, data );
         }
 
         public void Add( string id ) {

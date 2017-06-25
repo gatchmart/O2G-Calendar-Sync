@@ -90,17 +90,17 @@ namespace Outlook_Calendar_Sync {
         }
 
         private void outlook_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = DialogResult.Yes;
+            DialogResult = All_CB.Checked ? DialogResult.OK : DialogResult.Yes;
             Dispose();
         }
 
         private void Ignore_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = DialogResult.Cancel;
+            DialogResult = All_CB.Checked ? DialogResult.Ignore : DialogResult.Cancel;
             Dispose();
         }
 
         private void Google_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = DialogResult.No;
+            DialogResult = All_CB.Checked ? DialogResult.None : DialogResult.No;
             Dispose();
         }
     }
