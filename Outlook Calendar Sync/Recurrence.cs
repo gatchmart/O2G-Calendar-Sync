@@ -6,7 +6,11 @@ using Microsoft.Office.Interop.Outlook;
 using Exception = System.Exception;
 
 namespace Outlook_Calendar_Sync {
+
+    [Serializable]
     public class Recurrence {
+
+        [Serializable]
         public enum RecurrenceType {
             Daily = 0,
             Weekly = 1,
@@ -17,6 +21,7 @@ namespace Outlook_Calendar_Sync {
         }
 
         [Flags]
+        [Serializable]
         public enum DaysOfWeek {
             Sunday = 1,
             Monday = 2,
@@ -141,7 +146,7 @@ namespace Outlook_Calendar_Sync {
                             break;
 
                         case "UNTIL":
-                            var date = ( calItem.IsAllDayEvent )
+                            var date = ( calItem.IsAllDayEvent && split[1].Length == 8 )
                                 ? DateTime.ParseExact( split[1], "yyyyMMdd", CultureInfo.InvariantCulture )
                                 : DateTime.ParseExact( split[1], "yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture );
                             PatternEnd = date.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
@@ -416,19 +421,19 @@ namespace Outlook_Calendar_Sync {
 
             if ( DaysOfTheWeekMask != 0 ) {
                 builder.Append( "\t\t" );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Monday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Monday ) )
                     builder.Append( "Monday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Tuesday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Tuesday ) )
                     builder.Append( "Tuesday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Wednesday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Wednesday ) )
                     builder.Append( "Wednesday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Thursday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Thursday ) )
                     builder.Append( "Thursday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Friday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Friday ) )
                     builder.Append( "Friday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Saturday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Saturday ) )
                     builder.Append( "Saturday | " );
-                if ( DaysOfTheWeekMask.HasFlag( DayOfWeek.Sunday ) )
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Sunday ) )
                     builder.Append( "Sunday | " );
                 builder.Remove( builder.Length - 2, 2 );
             }
@@ -436,17 +441,54 @@ namespace Outlook_Calendar_Sync {
             return builder.ToString();
         }
 
+        public bool Equals( Recurrence other ) {
+            bool result = true;
+
+            result &= Type == other.Type;
+            result &= DaysOfTheWeekMask == other.DaysOfTheWeekMask;
+            result &= DayOfMonth == other.DayOfMonth;
+            result &= Duration == other.Duration;
+            result &= Interval == other.Interval;
+            result &= Instance == other.Instance;
+            result &= Occurrences == other.Occurrences;
+            result &= MonthOfYear == other.MonthOfYear;
+            result &= NoEndDate && other.NoEndDate;
+
+            if ( !string.IsNullOrEmpty( End ) && !string.IsNullOrEmpty( other.End ) )
+                result &= End.Equals( other.End );
+
+            if ( !string.IsNullOrEmpty( Start ) && !string.IsNullOrEmpty( other.Start ) )
+                result &= Start.Equals( other.Start );
+
+            if ( !string.IsNullOrEmpty( PatternEnd ) && !string.IsNullOrEmpty( other.PatternEnd ) )
+                result &= PatternEnd.Equals( other.PatternEnd );
+
+            if ( !string.IsNullOrEmpty( PatternStart ) && !string.IsNullOrEmpty( other.PatternStart ) )
+                result &= PatternStart.Equals( other.PatternStart );
+
+            return result;
+        }
+
         private void AddOutlookRecurrenceData( ref RecurrencePattern pattern ) {
             pattern.Duration = Duration;
+
             if ( End != null )
                 pattern.EndTime = DateTime.Parse( End );
+
             if ( Start != null )
                 pattern.StartTime = DateTime.Parse( Start );
-            pattern.Interval = Interval;
+
+            if ( Interval != 0 )
+                pattern.Interval = Interval;
+
             pattern.NoEndDate = NoEndDate;
+
             if ( Occurrences != 0 )
                 pattern.Occurrences = Occurrences;
-            pattern.PatternStartDate = DateTime.Parse( PatternStart );
+
+            if ( PatternStart != null )
+                pattern.PatternStartDate = DateTime.Parse( PatternStart );
+
             if ( PatternEnd != null )
                 pattern.PatternEndDate = DateTime.Parse( PatternEnd );
         }

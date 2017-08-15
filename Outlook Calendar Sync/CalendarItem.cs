@@ -9,6 +9,7 @@ using Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
 
+    [Serializable]
     public sealed class Attendee : IEquatable<Attendee> {
         public string Name { get; set; }
         public string Email { get; set; }
@@ -46,6 +47,7 @@ namespace Outlook_Calendar_Sync {
     }
 
     [Flags]
+    [Serializable]
     public enum CalendarItemAction {
         Nothing = 0,
         GoogleUpdate = 1,
@@ -59,6 +61,7 @@ namespace Outlook_Calendar_Sync {
     }
     
     [Flags]
+    [Serializable]
     public enum CalendarItemChanges {
         Nothing = 0,
         StartDate = 1,
@@ -74,9 +77,12 @@ namespace Outlook_Calendar_Sync {
         CalId = 1024
     }
 
+    [Serializable]
     public sealed class CalendarItem : IEquatable<CalendarItem> {
         // The date time format string used to properly format the start and end dates
         internal const string DateTimeFormatString = "yyyy-MM-ddTHH:mm:sszzz";
+
+        internal const int DEFAULT_REMINDER_TIME = 15;
 
         #region Properties
 
@@ -221,7 +227,7 @@ namespace Outlook_Calendar_Sync {
                     var pattern = item.GetRecurrencePattern();
                     Recurrence.GetOutlookPattern( ref pattern );
                 }
-
+                 
                 foreach ( var attendee in Attendees ) {
                     var recipt = item.Recipients.Add( attendee.Name );
                     bool result = recipt.Resolve();
@@ -330,7 +336,7 @@ namespace Outlook_Calendar_Sync {
                 ReminderTime = ev.Reminders.Overrides.First( x => x.Method == "email" || x.Method == "popup" ).Minutes ?? 0;
             else {
                 m_isUsingDefaultReminders = true;
-                ReminderTime = 30;
+                ReminderTime = DEFAULT_REMINDER_TIME;
             }
 
             if ( ev.Recurrence != null ) 
@@ -338,6 +344,9 @@ namespace Outlook_Calendar_Sync {
 
             if ( ev.Attendees != null ) {
                 foreach ( var eventAttendee in ev.Attendees ) {
+                    if ( string.IsNullOrEmpty( eventAttendee.DisplayName ) || string.IsNullOrEmpty( eventAttendee.Email ) )
+                        continue;
+                    
                     Attendees.Add( new Attendee {
                         Name = eventAttendee.DisplayName ?? "" , Email = eventAttendee.Email ?? "", Required = !( eventAttendee.Optional ?? true )
                     } );
@@ -359,8 +368,8 @@ namespace Outlook_Calendar_Sync {
             Body = item.Body;
             Subject = item.Subject;
             Location = item.Location;
-            ReminderTime = item.ReminderMinutesBeforeStart;
             m_isUsingDefaultReminders = !item.ReminderSet;
+            ReminderTime = m_isUsingDefaultReminders ? DEFAULT_REMINDER_TIME : item.ReminderMinutesBeforeStart;
             StartTimeZone = TimeZoneConverter.WindowsToIana( item.StartTimeZone.ID );
             EndTimeZone = TimeZoneConverter.WindowsToIana( item.EndTimeZone.ID );
             IsAllDayEvent = item.AllDayEvent;
@@ -469,7 +478,7 @@ namespace Outlook_Calendar_Sync {
                     Changes |= CalendarItemChanges.Attendees;
 
             if ( Recurrence != null && other.Recurrence != null ) {
-                if ( Recurrence.GetGoogleRecurrenceString().Equals( other.Recurrence.GetGoogleRecurrenceString() ) )
+                if ( Recurrence.Equals( other.Recurrence ) )
                     Changes |= CalendarItemChanges.Recurrence;
             } else if ( Recurrence != null || other.Recurrence != null)
                 Changes |= CalendarItemChanges.Recurrence;

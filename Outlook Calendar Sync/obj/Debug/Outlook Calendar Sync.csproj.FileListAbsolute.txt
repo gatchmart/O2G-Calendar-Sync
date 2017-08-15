@@ -66,18 +66,10 @@ D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar 
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Newtonsoft.Json.dll
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\NodaTime.dll
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Zlib.Portable.dll
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.pdb
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.pdb
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.PlatformServices.pdb
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Auth.PlatformServices.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Calendar.v3.pdb
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Calendar.v3.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Core.pdb
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.Core.xml
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.PlatformServices.pdb
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Google.Apis.PlatformServices.xml
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Newtonsoft.Json.xml
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\NodaTime.xml
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\bin\Debug\Zlib.Portable.xml
@@ -89,5 +81,6 @@ D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar 
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csproj.GenerateResource.Cache
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.dll
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.pdb
+D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.InitialLoadForm.resources
 D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook Calendar Sync.csprojResolveAssemblyReference.cache
-D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.SettingsForm.resources
+D:\Documents\Visual Studio 2015\Projects\Outlook-Calendar-Sync\Outlook Calendar Sync\obj\Debug\Outlook_Calendar_Sync.SchedulerForm.resources

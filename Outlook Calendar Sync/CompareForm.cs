@@ -6,11 +6,18 @@ using System.Windows.Forms;
 namespace Outlook_Calendar_Sync {
     public partial class CompareForm : Form {
 
+        public List<CalendarItem> Data => m_data;
+
         private List<CalendarItem> m_data;
         private SyncerForm m_parent;
 
         public CompareForm() {
             InitializeComponent();
+        }
+
+        public void SetCalendars( SyncPair pair ) {
+            Outlook_LBL.Text = pair.OutlookName;
+            Google_LBL.Text = pair.GoogleName;
         }
 
         public void SetParent( SyncerForm p ) {
@@ -57,7 +64,12 @@ namespace Outlook_Calendar_Sync {
         private void submit_BTN_Click( object sender, EventArgs e ) {
             var cal = ( from int item in listView1.CheckedIndices select m_data[item] ).ToList();
 
-            m_parent.StartUpdate( cal );
+            if ( m_parent != null )
+                m_parent.StartUpdate( cal );
+            else
+                m_data = cal;
+            DialogResult = DialogResult.OK;
+
             Close();
         }
 

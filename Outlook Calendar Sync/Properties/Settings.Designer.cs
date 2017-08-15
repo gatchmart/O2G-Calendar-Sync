@@ -34,5 +34,14 @@ namespace Outlook_Calendar_Sync.Properties {
                 this["IsInitialLoad"] = value;
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool MultiThreaded {
+            get {
+                return ((bool)(this["MultiThreaded"]));
+            }
+        }
     }
 }

@@ -117,7 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="SyncerForm_StartUpdate_Synchronization_has_been_completed_" xml:space="preserve">
-    <value>Synchronization has been completed.</value>
-  </data>
 </root>

@@ -11,7 +11,8 @@ namespace Outlook_Calendar_Sync {
             m_syncerForm.Ribbon = this;
 
             if ( Settings.Default.IsInitialLoad ) {
-                Syncer.Instance.PerformInitalLoad();
+                var initial = new InitialLoadForm();
+                initial.Show();
 
                 Settings.Default.IsInitialLoad = false;
                 Settings.Default.Save();
@@ -21,6 +22,11 @@ namespace Outlook_Calendar_Sync {
 
         private void Sync_BTN_Click( object sender, RibbonControlEventArgs e ) {
             m_syncerForm.Show();
+        }
+
+        private void Settings_BTN_Click( object sender, RibbonControlEventArgs e ) {
+            var settings = new SchedulerForm();
+            settings.Show();
         }
     }
 }

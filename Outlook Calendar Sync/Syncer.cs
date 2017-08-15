@@ -8,10 +8,15 @@ using Microsoft.Office.Interop.Outlook;
 using Application = System.Windows.Forms.Application;
 
 namespace Outlook_Calendar_Sync {
+    
     public class Syncer {
 
         public static Syncer Instance => _instance ?? ( _instance = new Syncer() );
         private static Syncer _instance;
+
+        public delegate void WriteToStatus( string text );
+
+        public WriteToStatus StatusUpdate;
 
         public bool PerformActionToAll { get; set; }
 
@@ -19,21 +24,12 @@ namespace Outlook_Calendar_Sync {
 
         public Folder Folder { get; set; }
 
+        private bool m_syncingPairs;
+
         public Syncer() {
             Action = 0;
             PerformActionToAll = false;
-        }
-
-        public void PerformInitalLoad()
-        {
-            var outlookList = OutlookSync.Syncer.PullListOfAppointments();
-            var googleList = GoogleSync.Syncer.PullListOfAppointments();
-
-            var finalList = CompareLists( outlookList, googleList );
-
-            var compare = new CompareForm();
-            compare.LoadData( finalList );
-            compare.Show();
+            m_syncingPairs = false;
         }
 
         public List<CalendarItem> GetFinalList(bool byDate = false, DateTime start = default( DateTime ), DateTime end = default( DateTime )) {
@@ -185,38 +181,96 @@ namespace Outlook_Calendar_Sync {
             return finalList;
         }
 
-        public void SubmitChanges(List<CalendarItem> items, BackgroundWorker worker )
+        public void SubmitChanges( List<CalendarItem> items, BackgroundWorker worker, float pairProgress = 1 )
         {
             int currentCount = 0;
 
             foreach ( var calendarItem in items )
             {
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookAdd ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookAdd ) ) {
+                    StatusUpdate?.Invoke( "- Adding " + calendarItem.Subject + " to Outlook." );
+
                     OutlookSync.Syncer.AddAppointment( calendarItem );
+                }
 
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleAdd ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleAdd ) ) {
+                    StatusUpdate?.Invoke( "- Adding " + calendarItem.Subject + " to Google." );
+
                     GoogleSync.Syncer.AddAppointment( calendarItem );
+                }
 
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookUpdate ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookUpdate ) ) {
+                    StatusUpdate?.Invoke( "- Updating " + calendarItem.Subject + " in Outlook." );
+
                     OutlookSync.Syncer.UpdateAppointment( calendarItem );
+                }
 
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleUpdate ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleUpdate ) ) {
+                    StatusUpdate?.Invoke( "- Updating " + calendarItem.Subject + " in Google." );
+
                     GoogleSync.Syncer.UpdateAppointment( calendarItem );
+                }
 
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleDelete ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.GoogleDelete ) ) {
+                    StatusUpdate?.Invoke( "- Deleting " + calendarItem.Subject + " from Outlook." );
+
                     GoogleSync.Syncer.DeleteAppointment( calendarItem );
+                }
 
-                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookDelete ) )
+                if ( calendarItem.Action.HasFlag( CalendarItemAction.OutlookDelete ) ) {
+                    StatusUpdate?.Invoke( "- Deleting " + calendarItem.Subject + " from Google." );
                     OutlookSync.Syncer.DeleteAppointment( calendarItem );
+                }
 
                 currentCount++;
-                var progress = (int)( currentCount / (float)items.Count * 100 );
-                worker.ReportProgress( progress );
+                var progress = (int)( currentCount / (float)items.Count * 100 * pairProgress);
+                if ( worker.WorkerReportsProgress )
+                    worker.ReportProgress( progress );
             }
 
-            Archiver.Instance.Save();
+            if ( !m_syncingPairs ) {
+                Archiver.Instance.Save();
+                if ( worker.WorkerReportsProgress )
+                    worker.ReportProgress( 100 );
+                StatusUpdate?.Invoke( "- Sync has been completed." );
+            }
+        }
 
-            worker.ReportProgress( 100 );
+        public void SynchornizePairs( SyncPair pair )
+        {
+            SynchornizePairs( new List<SyncPair> { pair }, new BackgroundWorker());
+        }
+
+        public void SynchornizePairs( List<SyncPair> pairs, BackgroundWorker worker )
+        {
+            StatusUpdate?.Invoke( "- Starting Sync" );
+
+            float count = 0;
+            m_syncingPairs = true;
+            foreach ( SyncPair pair in pairs ) {
+                StatusUpdate?.Invoke( "- Starting Sync for " + pair.OutlookName + " and " + pair.GoogleName );
+
+                OutlookSync.Syncer.SetOutlookWorkingFolder( pair.OutlookId );
+                GoogleSync.Syncer.SetGoogleWorkingFolder( pair.GoogleId );
+                Archiver.Instance.CurrentPair = pair;
+
+                var finalList = GetFinalList();
+                var progress = ++count / pairs.Count;
+
+                var compare = new CompareForm();
+                compare.SetCalendars( pair );
+                compare.LoadData( finalList );
+
+                if ( compare.ShowDialog() == DialogResult.OK )
+                    SubmitChanges( compare.Data, worker, progress );
+
+                StatusUpdate?.Invoke( "- Sync Completed for " + pair.OutlookName + " and " + pair.GoogleName );
+            }
+            m_syncingPairs = false;
+            Archiver.Instance.Save();
+            if ( worker.WorkerReportsProgress )
+                worker.ReportProgress( 100 );
+            StatusUpdate?.Invoke( "- Sync has been completed." );
         }
 
 #if DEBUG
@@ -227,7 +281,12 @@ namespace Outlook_Calendar_Sync {
             foreach ( var calendarItem in items )
                 builder.AppendLine( calendarItem.ToString() );
 
-            File.WriteAllText( Application.UserAppDataPath + "\\" + file, builder.ToString() );
+            if ( !Directory.Exists( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
+                                    "\\OutlookGoogleSync\\" ) )
+                Directory.CreateDirectory( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
+                                           "\\OutlookGoogleSync" );
+
+            File.WriteAllText( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + file, builder.ToString() );
         }
 #endif
     }

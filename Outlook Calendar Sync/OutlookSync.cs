@@ -23,16 +23,18 @@ namespace Outlook_Calendar_Sync {
 
         public Application Application { get; set; }
 
-        private readonly Folder m_folder;
+        private Folder m_folder;
 
-        public OutlookSync() {
-            Application = new Application();
+        public void Init( Application application )
+        {
+            Application = application;
             m_folder = Application.Session.GetDefaultFolder( OlDefaultFolders.olFolderCalendar ) as Folder;
         }
 
         public void AddAppointment( CalendarItem item ) {
             try {
                 var newEvent = item.GetOutlookAppointment( (AppointmentItem) Application.CreateItem( OlItemType.olAppointmentItem ) );
+                newEvent.Move( m_folder );
                 newEvent.Save();
                 Archiver.Instance.Add( item.ID );
 
@@ -111,30 +113,43 @@ namespace Outlook_Calendar_Sync {
             return c;
         }
 
+        public CalendarItem FindEventByEntryId( string entryId )
+        {
+
+            var appt = (AppointmentItem) Application.Session.GetItemFromID( entryId, m_folder.Store.StoreID );
+            if ( appt != null )
+            {
+                var calEvent = new CalendarItem();
+                calEvent.LoadFromOutlookAppointment( appt );
+                return calEvent;
+            }
+
+            return null;
+        }
+
         public void UpdateAppointment( CalendarItem ev ) {
 
             if ( ev.Recurrence != null && Resources.UpdateRecurrance.Equals( "true" ) ) {
-                //throw new NotImplementedException("Recurrance update is not fully incorported yet. This will not effect single event updates.");
 
-                // TODO: Find out why this item in not found when using recurring events
-                //var filter = "[Start] >= '" + DateTime.Parse( ev.Start ).ToString( "g" ) + "' AND [End] <= '" +
-                //             DateTime.Parse( ev.End ).ToString( "g" ) + "'";
-
-#pragma warning disable 162
+                // Create the filter to find the event. This is done by either the subject and start date or the ID
                 var filter = ( ev.Action.HasFlag( CalendarItemAction.GeneratedId ) )
                     ? ( "[Subject]='" + ev.Subject + "'" )
                     : "[ID] = '" + ev.ID + "'";
 
+                /*
                 Items items = m_folder.Items;
                 //items.IncludeRecurrences = true;
                 items.Sort( "[Start]", Type.Missing );
 
                 Items item = items.Restrict( filter );
+                */
 
-                foreach ( AppointmentItem appointmentItem in item ) {
+                var appointmentItem = m_folder.Items.Find( filter );
+
+                //foreach ( AppointmentItem appointmentItem in item ) {
                     if ( ev.Recurrence != null ) {
                         AppointmentItem i = null;
-                        if ( appointmentItem.RecurrenceState == OlRecurrenceState.olApptNotRecurring ) {
+                        if ( appointmentItem.RecurrenceState == 0 ) {
                             appointmentItem.GetRecurrencePattern();
                             i = appointmentItem;
                         } else
@@ -142,12 +157,11 @@ namespace Outlook_Calendar_Sync {
 
                         ev.GetOutlookAppointment( i );
                         i.Save();
-                    }
+                    //}
 
                     ev.Action &= ~CalendarItemAction.GeneratedId;
                     ev.Action &= ~CalendarItemAction.OutlookUpdate;
                 }
-#pragma warning restore 162
             } else {
                 // Check to see if the CalendarItem has a copy of the Outlook AppointmentItem
                 if ( ev.ContainsOutlookAppointmentItem ) {
@@ -176,15 +190,30 @@ namespace Outlook_Calendar_Sync {
                
             }
 
+            if ( !Archiver.Instance.Contains( ev.ID ) )
+                Archiver.Instance.Add( ev.ID );
+
         }
 
         public void DeleteAppointment( CalendarItem ev ) {
-             var items = m_folder.Items.Restrict( "[ID] = '" + ev.ID + "'"  );
+            var items = m_folder.Items.Restrict( "[ID] = '" + ev.ID + "'"  );
             foreach ( AppointmentItem appointmentItem in items ) {
                 appointmentItem.Delete();
             }
 
             Archiver.Instance.Delete( ev.ID );
+        }
+
+        public void SetOutlookWorkingFolder( string entryId, bool defaultFolder = false ) {
+            if ( defaultFolder )
+                m_folder = Application.Session.GetDefaultFolder( OlDefaultFolders.olFolderCalendar ) as Folder;
+            else
+                m_folder = Application.Session.GetFolderFromID( entryId ) as Folder;
+        }
+
+        public MAPIFolder GetDefaultMapiFolder()
+        {
+            return Application.Session.GetDefaultFolder( OlDefaultFolders.olFolderCalendar );
         }
 
         /// <summary>

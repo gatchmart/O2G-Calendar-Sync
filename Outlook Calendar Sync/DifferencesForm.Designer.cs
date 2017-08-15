@@ -24,21 +24,21 @@
         /// </summary>
         private void InitializeComponent() {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.Outlook_LV = new System.Windows.Forms.ListBox();
-            this.Google_LV = new System.Windows.Forms.ListBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.outlook_BTN = new System.Windows.Forms.Button();
             this.Google_BTN = new System.Windows.Forms.Button();
             this.Ignore_BTN = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.All_CB = new System.Windows.Forms.CheckBox();
+            this.Outlook_RTB = new System.Windows.Forms.RichTextBox();
+            this.Google_RTB = new System.Windows.Forms.RichTextBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.Outlook_LV);
+            this.groupBox1.Controls.Add(this.Outlook_RTB);
             this.groupBox1.Location = new System.Drawing.Point(10, 46);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
@@ -48,34 +48,10 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Outlook\'s Appointment";
             // 
-            // Outlook_LV
-            // 
-            this.Outlook_LV.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.Outlook_LV.FormattingEnabled = true;
-            this.Outlook_LV.Location = new System.Drawing.Point(5, 18);
-            this.Outlook_LV.Margin = new System.Windows.Forms.Padding(2);
-            this.Outlook_LV.Name = "Outlook_LV";
-            this.Outlook_LV.Size = new System.Drawing.Size(336, 277);
-            this.Outlook_LV.TabIndex = 0;
-            // 
-            // Google_LV
-            // 
-            this.Google_LV.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.Google_LV.FormattingEnabled = true;
-            this.Google_LV.Location = new System.Drawing.Point(5, 18);
-            this.Google_LV.Margin = new System.Windows.Forms.Padding(2);
-            this.Google_LV.Name = "Google_LV";
-            this.Google_LV.Size = new System.Drawing.Size(336, 277);
-            this.Google_LV.TabIndex = 0;
-            // 
             // groupBox2
             // 
             this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox2.Controls.Add(this.Google_LV);
+            this.groupBox2.Controls.Add(this.Google_RTB);
             this.groupBox2.Location = new System.Drawing.Point(359, 46);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
@@ -123,10 +99,11 @@
             this.label1.Location = new System.Drawing.Point(9, 7);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(476, 37);
+            this.label1.Size = new System.Drawing.Size(693, 37);
             this.label1.TabIndex = 5;
             this.label1.Text = "Two events with the same ID are different. Please review the differences and sele" +
     "ct which event\'s version to keep or ignore the changes.";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // All_CB
             // 
@@ -137,6 +114,24 @@
             this.All_CB.TabIndex = 6;
             this.All_CB.Text = "Repeat Action for Every Event";
             this.All_CB.UseVisualStyleBackColor = true;
+            // 
+            // Outlook_RTB
+            // 
+            this.Outlook_RTB.Location = new System.Drawing.Point(6, 19);
+            this.Outlook_RTB.Name = "Outlook_RTB";
+            this.Outlook_RTB.ReadOnly = true;
+            this.Outlook_RTB.Size = new System.Drawing.Size(334, 284);
+            this.Outlook_RTB.TabIndex = 0;
+            this.Outlook_RTB.Text = "";
+            // 
+            // Google_RTB
+            // 
+            this.Google_RTB.Location = new System.Drawing.Point(5, 18);
+            this.Google_RTB.Name = "Google_RTB";
+            this.Google_RTB.ReadOnly = true;
+            this.Google_RTB.Size = new System.Drawing.Size(334, 284);
+            this.Google_RTB.TabIndex = 1;
+            this.Google_RTB.Text = "";
             // 
             // DifferencesForm
             // 
@@ -165,13 +160,13 @@
         #endregion
 
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.ListBox Outlook_LV;
-        private System.Windows.Forms.ListBox Google_LV;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Button outlook_BTN;
         private System.Windows.Forms.Button Google_BTN;
         private System.Windows.Forms.Button Ignore_BTN;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox All_CB;
+        private System.Windows.Forms.RichTextBox Outlook_RTB;
+        private System.Windows.Forms.RichTextBox Google_RTB;
     }
 }
