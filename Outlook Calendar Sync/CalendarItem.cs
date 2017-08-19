@@ -390,6 +390,16 @@ namespace Outlook_Calendar_Sync {
                     Action |= CalendarItemAction.OutlookUpdate;
                     Action |= CalendarItemAction.GeneratedId;
                     ID = Guid.NewGuid().ToString().Replace( "-", "" );
+
+                    UserProperties prop = item.UserProperties;
+                    var p = prop.Add( "ID", OlUserPropertyType.olText );
+                    var d = prop.Add( "iCalID", OlUserPropertyType.olText );
+
+                    // Finally set the UserProperty values
+                    p.Value = ID;
+                    d.Value = iCalID;
+
+                    item.Save();
                 }
             }
 

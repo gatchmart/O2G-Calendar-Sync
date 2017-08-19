@@ -34,10 +34,14 @@ namespace Outlook_Calendar_Sync {
 
         private const string ApplicationName = "Outlook Google Calendar Sync";
         private CalendarService m_service;
+        private CalendarList m_calendarList;
+        private DateTime m_lastUpdate;
 
         public GoogleSync() {
             CurrentCalendar = "primary";
             PerformAuthentication();
+            m_lastUpdate = DateTime.MinValue;
+            m_calendarList = null;
         }
 
         public void AddAppointment( CalendarItem item ) {
@@ -125,20 +129,75 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public CalendarList PullCalendars() {
-            try {
+        /// <summary>
+        /// Gets an event using the event id
+        /// </summary>
+        /// <param name="id">The ID of the Event</param>
+        /// <returns>A CalendarItem of the event if found or null if not.</returns>
+        public CalendarItem PullAppointmentById( string id )
+        {
+            try
+            {
                 if ( m_service == null )
                     PerformAuthentication();
 
-                CalendarList calendarList = m_service.CalendarList.List().Execute();
+                var item = m_service.Events.Get( CurrentCalendar, id ).Execute();
+                if ( item != null )
+                {
+                    var calEvent = new CalendarItem();
+                    calEvent.LoadFromGoogleEvent( item );
 
-                return calendarList;
+                    return calEvent;
+                }
+
+                return null;
+            } catch ( GoogleApiException ex )
+            {
+                Debug.Write( ex );
+                MessageBox.Show( "There was an error when trying to pull a list of events from google.", "Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Pulls the list of calendars and allows a force refresh of the calendars.
+        /// </summary>
+        /// <param name="forceRefresh">If you want to force a refresh set to true</param>
+        /// <returns>A list of the user's Google calendars</returns>
+        public CalendarList PullCalendars( bool forceRefresh )
+        {
+            if ( forceRefresh )
+                m_lastUpdate = DateTime.MinValue;
+
+            return PullCalendars();
+        }
+
+        /// <summary>
+        /// Pulls the list of calendars.
+        /// </summary>
+        /// <returns>A list of the user's Google calendars</returns>
+        public CalendarList PullCalendars() {
+            try {
+
+                // Force the list to be updated initially and then every 30 minutes.
+                if ( m_lastUpdate == DateTime.MinValue || m_lastUpdate < DateTime.Now.Subtract( TimeSpan.FromMinutes( 30 ) ) )
+                {
+                    if ( m_service == null )
+                        PerformAuthentication();
+
+                    m_calendarList = m_service.CalendarList.List().Execute();
+                    m_lastUpdate = DateTime.Now;
+                }
+
+                return m_calendarList;
             } catch ( GoogleApiException ex ) {
                 Debug.Write( ex );
                 MessageBox.Show( "There was an error when trying to pull a list of calendars from google.", "Error!",
                     MessageBoxButtons.OK, MessageBoxIcon.Error );
                 return null;
             } catch ( TokenResponseException ex ) {
+                Debug.WriteLine( ex );
                 return null;
             }
         }
@@ -161,15 +220,40 @@ namespace Outlook_Calendar_Sync {
                 if ( m_service == null )
                     PerformAuthentication();
 
-                // TODO: Deal with reoccuring events
-                m_service.Events.Delete( CurrentCalendar, ev.ID ).Execute();
+                if ( ev.Recurrence != null )
+                {
+                    var events = m_service.Events.Instances( CurrentCalendar, ev.ID ).Execute();
+                    var list = events.Items.ToList();
+                    foreach ( var @event in list )
+                        m_service.Events.Delete( CurrentCalendar, @event.Id );
+
+                } else
+                    m_service.Events.Delete( CurrentCalendar, ev.ID ).Execute();
+
                 Archiver.Instance.Delete( ev.ID );
             } catch ( GoogleApiException ex ) {
                 Debug.Write( ex );
                 MessageBox.Show( "There was an error when trying to delete an event from google.", "Error!",
                     MessageBoxButtons.OK, MessageBoxIcon.Error );
             }
-        } 
+        }
+
+        public void DeleteAppointment( string id ) {
+            try
+            {
+                if ( m_service == null )
+                    PerformAuthentication();
+
+                // TODO: Deal with reoccuring events
+                m_service.Events.Delete( CurrentCalendar, id ).Execute();
+                Archiver.Instance.Delete( id );
+            } catch ( GoogleApiException ex )
+            {
+                Debug.Write( ex );
+                MessageBox.Show( "There was an error when trying to delete an event from google.", "Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+            }
+        }
 
         public CalendarItem FindItem( string googleId, DateTime startDate, DateTime endDate ) {
             var items = PullListOfAppointmentsByDate( startDate, endDate );

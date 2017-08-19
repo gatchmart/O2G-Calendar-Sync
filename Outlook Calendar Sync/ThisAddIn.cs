@@ -14,6 +14,7 @@ namespace Outlook_Calendar_Sync {
 
         private void ThisAddIn_Startup( object sender, System.EventArgs e ) {
             OutlookSync.Syncer.Init( Application );
+            ( (Outlook.ApplicationEvents_11_Event) Application ).Quit += ThisAddIn_Quit;
 
             m_syncer = Syncer.Instance;
             m_scheduler = Scheduler.Instance;
@@ -42,7 +43,6 @@ namespace Outlook_Calendar_Sync {
                             items2.ItemRemove += Outlook_ItemRemove;
                         }
                     }
-
                 }
             }
 
@@ -66,6 +66,11 @@ namespace Outlook_Calendar_Sync {
         private void Outlook_ItemRemove()
         {
             m_scheduler.Item_Remove();
+        }
+
+        private void ThisAddIn_Quit()
+        {
+            m_scheduler.Save( false );
         }
 
         private void ThisAddIn_Shutdown( object sender, System.EventArgs e ) {

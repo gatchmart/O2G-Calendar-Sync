@@ -30,12 +30,16 @@
         {
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.UpdateTask_BTN = new System.Windows.Forms.Button();
+            this.Save_BTN = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.Precedence_CB = new System.Windows.Forms.ComboBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.SilentSync_CB = new System.Windows.Forms.CheckBox();
+            this.label7 = new System.Windows.Forms.Label();
             this.Event_CB = new System.Windows.Forms.ComboBox();
             this.Time_TB = new System.Windows.Forms.TextBox();
-            this.RemoveTask_BTN = new System.Windows.Forms.Button();
             this.label6 = new System.Windows.Forms.Label();
-            this.AddTask_BTN = new System.Windows.Forms.Button();
             this.label5 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -43,8 +47,9 @@
             this.label8 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.GoogleCal_CB = new System.Windows.Forms.ComboBox();
+            this.RemoveTask_BTN = new System.Windows.Forms.Button();
             this.Calendars_LB = new System.Windows.Forms.ListBox();
-            this.Save_BTN = new System.Windows.Forms.Button();
+            this.AddTask_BTN = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -55,30 +60,55 @@
             this.label3.Location = new System.Drawing.Point(11, 9);
             this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(540, 22);
+            this.label3.Size = new System.Drawing.Size(581, 22);
             this.label3.TabIndex = 12;
             this.label3.Text = "This is where you can schedule tasks to automatically sync calendar pairs.";
             this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.UpdateTask_BTN);
             this.groupBox1.Controls.Add(this.Save_BTN);
             this.groupBox1.Controls.Add(this.groupBox2);
+            this.groupBox1.Controls.Add(this.RemoveTask_BTN);
             this.groupBox1.Controls.Add(this.Calendars_LB);
+            this.groupBox1.Controls.Add(this.AddTask_BTN);
             this.groupBox1.Location = new System.Drawing.Point(12, 34);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(539, 335);
+            this.groupBox1.Size = new System.Drawing.Size(580, 335);
             this.groupBox1.TabIndex = 13;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Scheduled Tasks";
             // 
+            // UpdateTask_BTN
+            // 
+            this.UpdateTask_BTN.Location = new System.Drawing.Point(360, 299);
+            this.UpdateTask_BTN.Name = "UpdateTask_BTN";
+            this.UpdateTask_BTN.Size = new System.Drawing.Size(100, 25);
+            this.UpdateTask_BTN.TabIndex = 5;
+            this.UpdateTask_BTN.Text = "Update Task";
+            this.UpdateTask_BTN.UseVisualStyleBackColor = true;
+            this.UpdateTask_BTN.Click += new System.EventHandler(this.UpdateTask_BTN_Click);
+            // 
+            // Save_BTN
+            // 
+            this.Save_BTN.Location = new System.Drawing.Point(7, 299);
+            this.Save_BTN.Name = "Save_BTN";
+            this.Save_BTN.Size = new System.Drawing.Size(100, 25);
+            this.Save_BTN.TabIndex = 4;
+            this.Save_BTN.Text = "Save Schedule";
+            this.Save_BTN.UseVisualStyleBackColor = true;
+            this.Save_BTN.Click += new System.EventHandler(this.Save_BTN_Click);
+            // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.Precedence_CB);
+            this.groupBox2.Controls.Add(this.label9);
+            this.groupBox2.Controls.Add(this.SilentSync_CB);
+            this.groupBox2.Controls.Add(this.label7);
             this.groupBox2.Controls.Add(this.Event_CB);
             this.groupBox2.Controls.Add(this.Time_TB);
-            this.groupBox2.Controls.Add(this.RemoveTask_BTN);
             this.groupBox2.Controls.Add(this.label6);
-            this.groupBox2.Controls.Add(this.AddTask_BTN);
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label2);
             this.groupBox2.Controls.Add(this.label1);
@@ -88,10 +118,51 @@
             this.groupBox2.Controls.Add(this.GoogleCal_CB);
             this.groupBox2.Location = new System.Drawing.Point(7, 148);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(527, 145);
+            this.groupBox2.Size = new System.Drawing.Size(564, 145);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Schedule a Task";
+            // 
+            // Precedence_CB
+            // 
+            this.Precedence_CB.Enabled = false;
+            this.Precedence_CB.FormattingEnabled = true;
+            this.Precedence_CB.Items.AddRange(new object[] {
+            "Outlook",
+            "Google"});
+            this.Precedence_CB.Location = new System.Drawing.Point(391, 111);
+            this.Precedence_CB.Name = "Precedence_CB";
+            this.Precedence_CB.Size = new System.Drawing.Size(121, 21);
+            this.Precedence_CB.TabIndex = 25;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(302, 114);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(68, 13);
+            this.label9.TabIndex = 24;
+            this.label9.Text = "Precedence:";
+            // 
+            // SilentSync_CB
+            // 
+            this.SilentSync_CB.AutoSize = true;
+            this.SilentSync_CB.Location = new System.Drawing.Point(305, 91);
+            this.SilentSync_CB.Name = "SilentSync_CB";
+            this.SilentSync_CB.Size = new System.Drawing.Size(85, 17);
+            this.SilentSync_CB.TabIndex = 23;
+            this.SilentSync_CB.Text = "Silent Sync?";
+            this.SilentSync_CB.UseVisualStyleBackColor = true;
+            this.SilentSync_CB.CheckedChanged += new System.EventHandler(this.SilentSync_CB_CheckedChanged);
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(288, 71);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(271, 13);
+            this.label7.TabIndex = 22;
+            this.label7.Text = "4) Select if you want silent syncing and the precedence.";
             // 
             // Event_CB
             // 
@@ -107,23 +178,15 @@
             this.Event_CB.Name = "Event_CB";
             this.Event_CB.Size = new System.Drawing.Size(153, 21);
             this.Event_CB.TabIndex = 21;
+            this.Event_CB.SelectedIndexChanged += new System.EventHandler(this.Event_CB_SelectedIndexChanged);
             // 
             // Time_TB
             // 
+            this.Time_TB.Enabled = false;
             this.Time_TB.Location = new System.Drawing.Point(391, 38);
             this.Time_TB.Name = "Time_TB";
             this.Time_TB.Size = new System.Drawing.Size(57, 20);
             this.Time_TB.TabIndex = 20;
-            // 
-            // RemoveTask_BTN
-            // 
-            this.RemoveTask_BTN.Location = new System.Drawing.Point(421, 107);
-            this.RemoveTask_BTN.Name = "RemoveTask_BTN";
-            this.RemoveTask_BTN.Size = new System.Drawing.Size(100, 25);
-            this.RemoveTask_BTN.TabIndex = 2;
-            this.RemoveTask_BTN.Text = "Remove Task";
-            this.RemoveTask_BTN.UseVisualStyleBackColor = true;
-            this.RemoveTask_BTN.Click += new System.EventHandler(this.RemoveTask_BTN_Click);
             // 
             // label6
             // 
@@ -133,16 +196,6 @@
             this.label6.Size = new System.Drawing.Size(83, 13);
             this.label6.TabIndex = 19;
             this.label6.Text = "Time in minutes:";
-            // 
-            // AddTask_BTN
-            // 
-            this.AddTask_BTN.Location = new System.Drawing.Point(315, 107);
-            this.AddTask_BTN.Name = "AddTask_BTN";
-            this.AddTask_BTN.Size = new System.Drawing.Size(100, 25);
-            this.AddTask_BTN.TabIndex = 1;
-            this.AddTask_BTN.Text = "Add Task";
-            this.AddTask_BTN.UseVisualStyleBackColor = true;
-            this.AddTask_BTN.Click += new System.EventHandler(this.AddTask_BTN_Click);
             // 
             // label5
             // 
@@ -205,31 +258,44 @@
             this.GoogleCal_CB.Size = new System.Drawing.Size(152, 21);
             this.GoogleCal_CB.TabIndex = 6;
             // 
+            // RemoveTask_BTN
+            // 
+            this.RemoveTask_BTN.Location = new System.Drawing.Point(466, 299);
+            this.RemoveTask_BTN.Name = "RemoveTask_BTN";
+            this.RemoveTask_BTN.Size = new System.Drawing.Size(100, 25);
+            this.RemoveTask_BTN.TabIndex = 2;
+            this.RemoveTask_BTN.Text = "Remove Task";
+            this.RemoveTask_BTN.UseVisualStyleBackColor = true;
+            this.RemoveTask_BTN.Click += new System.EventHandler(this.RemoveTask_BTN_Click);
+            // 
             // Calendars_LB
             // 
             this.Calendars_LB.FormattingEnabled = true;
             this.Calendars_LB.Location = new System.Drawing.Point(7, 20);
             this.Calendars_LB.Name = "Calendars_LB";
-            this.Calendars_LB.Size = new System.Drawing.Size(527, 121);
+            this.Calendars_LB.Size = new System.Drawing.Size(564, 121);
             this.Calendars_LB.TabIndex = 0;
+            this.Calendars_LB.SelectedIndexChanged += new System.EventHandler(this.Calendars_LB_SelectedIndexChanged);
             // 
-            // Save_BTN
+            // AddTask_BTN
             // 
-            this.Save_BTN.Location = new System.Drawing.Point(433, 299);
-            this.Save_BTN.Name = "Save_BTN";
-            this.Save_BTN.Size = new System.Drawing.Size(100, 25);
-            this.Save_BTN.TabIndex = 4;
-            this.Save_BTN.Text = "Save Schedule";
-            this.Save_BTN.UseVisualStyleBackColor = true;
-            this.Save_BTN.Click += new System.EventHandler(this.Save_BTN_Click);
+            this.AddTask_BTN.Location = new System.Drawing.Point(254, 299);
+            this.AddTask_BTN.Name = "AddTask_BTN";
+            this.AddTask_BTN.Size = new System.Drawing.Size(100, 25);
+            this.AddTask_BTN.TabIndex = 1;
+            this.AddTask_BTN.Text = "Add Task";
+            this.AddTask_BTN.UseVisualStyleBackColor = true;
+            this.AddTask_BTN.Click += new System.EventHandler(this.AddTask_BTN_Click);
             // 
             // SchedulerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(562, 378);
+            this.ClientSize = new System.Drawing.Size(601, 378);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label3);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
             this.Name = "SchedulerForm";
             this.Text = "Task Scheduler";
             this.Load += new System.EventHandler(this.SettingsForm_Load);
@@ -259,5 +325,10 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.ComboBox Event_CB;
         private System.Windows.Forms.Button Save_BTN;
+        private System.Windows.Forms.CheckBox SilentSync_CB;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.ComboBox Precedence_CB;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Button UpdateTask_BTN;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -124,6 +125,11 @@ namespace Outlook_Calendar_Sync {
             writer.WriteEndDocument();
 
             writer.Close();
+        }
+
+        public List<string> GetListForSyncPair( SyncPair pair )
+        {
+            return m_data.ContainsKey( pair ) ? m_data[pair] : null;
         }
 
         public void Add( string id ) {
