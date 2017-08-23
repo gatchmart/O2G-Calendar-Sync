@@ -14,6 +14,7 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
+using Outlook_Calendar_Sync.Properties;
 
 namespace Outlook_Calendar_Sync {
 
@@ -343,9 +344,9 @@ namespace Outlook_Calendar_Sync {
             {
                 m_currentCalendar = "primary";
                 UserCredential credential;
+                byte[] secrets = Resources.client_secret;
 
-                using ( var stream =
-                    new FileStream( m_workingDirectory + "client_secret.json", FileMode.Open, FileAccess.Read ) )
+                using ( var stream = new MemoryStream( secrets ) )
                 {
                     var credPath = Path.Combine( m_workingDirectory, ".credentials\\Outlook-Google-Sync.json" );
                     var cancel = new CancellationTokenSource( DEFAULT_CANCEL_TIME_OUT );
@@ -360,7 +361,7 @@ namespace Outlook_Calendar_Sync {
 
                     if ( credential.Token.IsExpired( SystemClock.Default ) )
                     {
-                        GoogleWebAuthorizationBroker.ReauthorizeAsync( credential, cancel.Token ).RunSynchronously();
+                        GoogleWebAuthorizationBroker.ReauthorizeAsync( credential, cancel.Token );
                     }
 
                     Debug.WriteLine( "Credential file saved to: " + credPath );
