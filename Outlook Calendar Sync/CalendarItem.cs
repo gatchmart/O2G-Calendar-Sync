@@ -9,7 +9,6 @@ using Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
 
-    [Serializable]
     public sealed class Attendee : IEquatable<Attendee> {
         public string Name { get; set; }
         public string Email { get; set; }
@@ -47,7 +46,6 @@ namespace Outlook_Calendar_Sync {
     }
 
     [Flags]
-    [Serializable]
     public enum CalendarItemAction {
         Nothing = 0,
         GoogleUpdate = 1,
@@ -61,7 +59,6 @@ namespace Outlook_Calendar_Sync {
     }
     
     [Flags]
-    [Serializable]
     public enum CalendarItemChanges {
         Nothing = 0,
         StartDate = 1,
@@ -77,7 +74,6 @@ namespace Outlook_Calendar_Sync {
         CalId = 1024
     }
 
-    [Serializable]
     public sealed class CalendarItem : IEquatable<CalendarItem> {
         // The date time format string used to properly format the start and end dates
         internal const string DateTimeFormatString = "yyyy-MM-ddTHH:mm:sszzz";

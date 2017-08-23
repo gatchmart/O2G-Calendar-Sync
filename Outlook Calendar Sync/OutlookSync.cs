@@ -62,6 +62,9 @@ namespace Outlook_Calendar_Sync {
         {
             if ( m_lastUpdate == DateTime.MinValue || m_lastUpdate < DateTime.Now.Subtract( TimeSpan.FromMinutes( 30 ) ) )
             {
+                var oldFolder = m_folder.EntryID;
+                SetOutlookWorkingFolder( "", true );
+
                 if ( m_folderList != null )
                 {
                     m_folderList.Clear();
@@ -72,6 +75,9 @@ namespace Outlook_Calendar_Sync {
 
                 foreach ( Folder f in m_folder.Folders )
                     m_folderList.Add( new OutlookFolder { Name = f.Name, EntryID = f.EntryID } );
+
+                SetOutlookWorkingFolder( oldFolder );
+                m_lastUpdate = DateTime.Now;
             }
 
             return m_folderList;

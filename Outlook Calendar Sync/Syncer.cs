@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Outlook;
 using Application = System.Windows.Forms.Application;
@@ -54,7 +55,7 @@ namespace Outlook_Calendar_Sync {
             {
                 outlookList = m_outlookSync.PullListOfAppointmentsByDate( start, end );
                 googleList = m_googleSync.PullListOfAppointmentsByDate( start, end );
-            } else
+            } else 
             {
                 outlookList = m_outlookSync.PullListOfAppointments();
                 googleList = m_googleSync.PullListOfAppointments();

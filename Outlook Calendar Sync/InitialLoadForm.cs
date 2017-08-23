@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Google;
 using Google.Apis.Calendar.v3.Data;
@@ -51,6 +52,7 @@ namespace Outlook_Calendar_Sync {
                     Connected_LBL.Visible = true;
                     Connect_BTN.Enabled = false;
                     Next_BTN.Enabled = true;
+
                 } else {
                     Debug.Write( "GoogleSync.Syncer.PerformAuthentication returned false." );
                     Connected_LBL.Text = "Failed to Connect";

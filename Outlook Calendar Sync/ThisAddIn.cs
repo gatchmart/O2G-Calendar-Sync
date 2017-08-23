@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using Outlook_Calendar_Sync.Properties;
 using Outlook = Microsoft.Office.Interop.Outlook;

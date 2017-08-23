@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.13
+VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Outlook Calendar Sync", "Outlook Calendar Sync\Outlook Calendar Sync.csproj", "{5D27E46A-D7D1-412D-9ED9-E43847991A78}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Outlook Calendar Sync Tests", "Outlook Calendar Sync Tests\Outlook Calendar Sync Tests.csproj", "{1B5FED6A-8187-4679-9EF2-7BD2C58D4DE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,12 +15,11 @@ Global
 		{5D27E46A-D7D1-412D-9ED9-E43847991A78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D27E46A-D7D1-412D-9ED9-E43847991A78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D27E46A-D7D1-412D-9ED9-E43847991A78}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1B5FED6A-8187-4679-9EF2-7BD2C58D4DE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B5FED6A-8187-4679-9EF2-7BD2C58D4DE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1B5FED6A-8187-4679-9EF2-7BD2C58D4DE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1B5FED6A-8187-4679-9EF2-7BD2C58D4DE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {335AE52F-407C-4777-9080-1A037B2F4CFE}
 	EndGlobalSection
 EndGlobal

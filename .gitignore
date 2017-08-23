@@ -1,0 +1,8 @@
+.vs/
+Outlook Calendar Sync/[Bb]bin/
+Outlook Calendar Sync/[Oo]bj/
+/*.user
+.gitlab/
+
+client_secret.json
+.vs/Outlook Calendar Sync/v15/.suo

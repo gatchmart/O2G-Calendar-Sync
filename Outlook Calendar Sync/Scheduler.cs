@@ -74,8 +74,8 @@ namespace Outlook_Calendar_Sync {
             {
                 m_tasks.Remove( task );
 
-                if ( m_tasks.Count == 0 && m_thread.IsAlive )
-                    m_thread.Abort();
+                //if ( m_tasks.Count == 0 && m_thread.IsAlive )
+                //    m_thread.Abort();
             }
         }
 
@@ -165,117 +165,117 @@ namespace Outlook_Calendar_Sync {
         {
             try
             {
-                if ( m_tasks != null && m_tasks.Count > 0 )
+                // Setup an initial delay before starting to sync
+                Thread.Sleep( 5000 );
+                while ( true )
                 {
-                    // Setup an initial delay before starting to sync
-                    Thread.Sleep( 5000 );
-                    while ( true )
+                    // Lock m_tasks so the main thread doesn't mess with it while we are looping through it.
+                    lock ( m_tasks )
                     {
-                        // Lock m_tasks so the main thread doesn't mess with it while we are looping through it.
-                        lock ( m_tasks )
+
+
+                        // Loop through all the tasks and perform syncs as apporiate.
+                        foreach ( var schedulerTask in m_tasks )
                         {
-                            // Loop through all the tasks and perform syncs as apporiate.
-                            foreach ( var schedulerTask in m_tasks )
+                            if ( schedulerTask.Event == SchedulerEvent.Daily )
                             {
-                                if ( schedulerTask.Event == SchedulerEvent.Daily )
+                                if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 1 ) ) )
                                 {
-                                    if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 1 ) ) )
-                                    {
-                                        Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
-                                        schedulerTask.LastRunTime = DateTime.Now;
-                                    }
-                                } else if ( schedulerTask.Event == SchedulerEvent.Hourly )
-                                {
-                                    if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromHours( 1 ) ) )
-                                    {
-                                        Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
-                                        schedulerTask.LastRunTime = DateTime.Now;
-                                    }
-                                } else if ( schedulerTask.Event == SchedulerEvent.Weekly )
-                                {
-                                    if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 7 ) ) )
-                                    {
-                                        Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
-                                        schedulerTask.LastRunTime = DateTime.Now;
-                                    }
-                                } else if ( schedulerTask.Event == SchedulerEvent.CustomTime )
-                                {
-                                    if ( schedulerTask.LastRunTime <
-                                         DateTime.Now.Subtract( TimeSpan.FromMinutes( schedulerTask.TimeSpan ) ) )
-                                    {
-                                        Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
-                                        schedulerTask.LastRunTime = DateTime.Now;
-                                    }
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    schedulerTask.LastRunTime = DateTime.Now;
                                 }
-
-                            }
-                        }
-
-                        // Lock m_autoSyncEvents to ensure no other threads modify it as we iterate through it
-                        lock ( m_autoSyncEvents )
-                        {
-                            foreach ( var autoSyncEvent in m_autoSyncEvents )
+                            } else if ( schedulerTask.Event == SchedulerEvent.Hourly )
                             {
-                                if ( autoSyncEvent.Action == CalendarItemAction.GoogleAdd )
+                                if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromHours( 1 ) ) )
                                 {
-                                    // Setup the proper working folders and the CurrentPair
-                                    OutlookSync.Syncer.SetOutlookWorkingFolder( autoSyncEvent.Pair.OutlookId );
-                                    GoogleSync.Syncer.SetGoogleWorkingFolder( autoSyncEvent.Pair.GoogleId );
-                                    Archiver.Instance.CurrentPair = autoSyncEvent.Pair;
-
-                                    // Find the Outlook appointment using its ID.
-                                    var calendarItem = OutlookSync.Syncer.FindEventByEntryId( autoSyncEvent.EntryId );
-                                    if ( calendarItem != null )
-                                        GoogleSync.Syncer.AddAppointment( calendarItem );
-
-                                    // Reset the default working folders.
-                                    OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                    GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
-                                } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleUpdate )
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    schedulerTask.LastRunTime = DateTime.Now;
+                                }
+                            } else if ( schedulerTask.Event == SchedulerEvent.Weekly )
+                            {
+                                if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 7 ) ) )
                                 {
-                                    // Setup the proper working folders and the CurrentPair
-                                    OutlookSync.Syncer.SetOutlookWorkingFolder( autoSyncEvent.Pair.OutlookId );
-                                    GoogleSync.Syncer.SetGoogleWorkingFolder( autoSyncEvent.Pair.GoogleId );
-                                    Archiver.Instance.CurrentPair = autoSyncEvent.Pair;
-
-                                    // Find the Outlook appointment using its ID.
-                                    var calendarItem = OutlookSync.Syncer.FindEventByEntryId( autoSyncEvent.EntryId );
-                                    if ( calendarItem != null )
-                                        GoogleSync.Syncer.UpdateAppointment( calendarItem );
-
-                                    // Reset the default working folders.
-                                    OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                    GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
-                                } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleDelete )
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    schedulerTask.LastRunTime = DateTime.Now;
+                                }
+                            } else if ( schedulerTask.Event == SchedulerEvent.CustomTime )
+                            {
+                                if ( schedulerTask.LastRunTime <
+                                     DateTime.Now.Subtract( TimeSpan.FromMinutes( schedulerTask.TimeSpan ) ) )
                                 {
-                                    // Find the deleted appointments in Outlook
-                                    foreach ( var task in m_tasks )
-                                    {
-                                        var events = Syncer.Instance.FindDeletedEvents( task.Pair );
-
-                                        OutlookSync.Syncer.SetOutlookWorkingFolder( task.Pair.OutlookId );
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( task.Pair.GoogleId );
-                                        Archiver.Instance.CurrentPair = task.Pair;
-
-                                        foreach ( var evnt in events )
-                                            GoogleSync.Syncer.DeleteAppointment( evnt );
-
-                                        // Reset the default working folders.
-                                        OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
-                                    }
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    schedulerTask.LastRunTime = DateTime.Now;
                                 }
                             }
 
-                            // Save the archiver and clear the auto sync events since they have been performed.
-                            Archiver.Instance.Save();
-                            m_autoSyncEvents.Clear();
                         }
-
-                        // Sleep the thread for 30 seconds.
-                        Thread.Sleep( 30000 );
                     }
+
+                    // Lock m_autoSyncEvents to ensure no other threads modify it as we iterate through it
+                    lock ( m_autoSyncEvents )
+                    {
+                        foreach ( var autoSyncEvent in m_autoSyncEvents )
+                        {
+                            if ( autoSyncEvent.Action == CalendarItemAction.GoogleAdd )
+                            {
+                                // Setup the proper working folders and the CurrentPair
+                                OutlookSync.Syncer.SetOutlookWorkingFolder( autoSyncEvent.Pair.OutlookId );
+                                GoogleSync.Syncer.SetGoogleWorkingFolder( autoSyncEvent.Pair.GoogleId );
+                                Archiver.Instance.CurrentPair = autoSyncEvent.Pair;
+
+                                // Find the Outlook appointment using its ID.
+                                var calendarItem = OutlookSync.Syncer.FindEventByEntryId( autoSyncEvent.EntryId );
+                                if ( calendarItem != null )
+                                    GoogleSync.Syncer.AddAppointment( calendarItem );
+
+                                // Reset the default working folders.
+                                OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
+                                GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                            } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleUpdate )
+                            {
+                                // Setup the proper working folders and the CurrentPair
+                                OutlookSync.Syncer.SetOutlookWorkingFolder( autoSyncEvent.Pair.OutlookId );
+                                GoogleSync.Syncer.SetGoogleWorkingFolder( autoSyncEvent.Pair.GoogleId );
+                                Archiver.Instance.CurrentPair = autoSyncEvent.Pair;
+
+                                // Find the Outlook appointment using its ID.
+                                var calendarItem = OutlookSync.Syncer.FindEventByEntryId( autoSyncEvent.EntryId );
+                                if ( calendarItem != null )
+                                    GoogleSync.Syncer.UpdateAppointment( calendarItem );
+
+                                // Reset the default working folders.
+                                OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
+                                GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                            } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleDelete )
+                            {
+                                // Find the deleted appointments in Outlook
+                                foreach ( var task in m_tasks )
+                                {
+                                    var events = Syncer.Instance.FindDeletedEvents( task.Pair );
+
+                                    OutlookSync.Syncer.SetOutlookWorkingFolder( task.Pair.OutlookId );
+                                    GoogleSync.Syncer.SetGoogleWorkingFolder( task.Pair.GoogleId );
+                                    Archiver.Instance.CurrentPair = task.Pair;
+
+                                    foreach ( var evnt in events )
+                                        GoogleSync.Syncer.DeleteAppointment( evnt );
+
+                                    // Reset the default working folders.
+                                    OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
+                                    GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                }
+                            }
+                        }
+
+                        // Save the archiver and clear the auto sync events since they have been performed.
+                        Archiver.Instance.Save();
+                        m_autoSyncEvents.Clear();
+                    }
+
+                    // Sleep the thread for 30 seconds.
+                    Thread.Sleep( 30000 );
                 }
+
             } catch ( Exception ex )
             {
                 Debug.WriteLine( ex );
@@ -434,10 +434,43 @@ namespace Outlook_Calendar_Sync {
     }
 
     [Serializable]
-    public class AutoSyncEvent
+    public class AutoSyncEvent : IEquatable<AutoSyncEvent>
     {
         public SyncPair Pair;
         public string EntryId;
         public CalendarItemAction Action;
+
+        public AutoSyncEvent()
+        {
+            Pair = null;
+            EntryId = null;
+            Action = CalendarItemAction.Nothing;
+        }
+
+        public bool Equals( AutoSyncEvent other )
+        {
+            if ( ReferenceEquals( null, other ) ) return false;
+            if ( ReferenceEquals( this, other ) ) return true;
+            return Equals( Pair, other.Pair ) && string.Equals( EntryId, other.EntryId ) && Action == other.Action;
+        }
+
+        public override bool Equals( object obj )
+        {
+            if ( ReferenceEquals( null, obj ) ) return false;
+            if ( ReferenceEquals( this, obj ) ) return true;
+            if ( obj.GetType() != this.GetType() ) return false;
+            return Equals( (AutoSyncEvent) obj );
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = ( Pair != null ? Pair.GetHashCode() : 0 );
+                hashCode = ( hashCode * 397 ) ^ ( EntryId != null ? EntryId.GetHashCode() : 0 );
+                hashCode = ( hashCode * 397 ) ^ (int) Action;
+                return hashCode;
+            }
+        }
     }
 }
