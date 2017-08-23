@@ -30,13 +30,13 @@ namespace Outlook_Calendar_Sync {
 
         private string m_currentCalendar;
 
-
         private readonly string[] m_scopes = { CalendarService.Scope.Calendar };
         private readonly string m_workingDirectory =
             Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\";
 
-        private const string ApplicationName = "Outlook Google Calendar Sync";
+        private const string APPLICATION_NAME = "Outlook Google Calendar Sync";
         private const int DEFAULT_CANCEL_TIME_OUT = 60000;
+
         private CalendarService m_service;
         private CalendarList m_calendarList;
         private DateTime m_lastUpdate;
@@ -370,7 +370,7 @@ namespace Outlook_Calendar_Sync {
                 m_service = new CalendarService( new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
-                    ApplicationName = ApplicationName
+                    ApplicationName = APPLICATION_NAME
                 } );
 
                 return true;

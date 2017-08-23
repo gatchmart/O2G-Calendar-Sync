@@ -233,6 +233,7 @@
       <DependentUpon>InitialLoadForm.cs</DependentUpon>
     </Compile>
     <Compile Include="OutlookSync.cs" />
+    <Compile Include="Precedence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -247,6 +248,7 @@
     <Compile Include="Syncer.cs" />
     <Compile Include="SyncPair.cs" />
     <Compile Include="TimeZoneConverter.cs" />
+    <None Include="Resources\client_secret.json" />
     <None Include="Resources\sync-gateway-icon.png" />
     <EmbeddedResource Include="CompareForm.resx">
       <DependentUpon>CompareForm.cs</DependentUpon>
@@ -278,9 +280,6 @@
       <DependentUpon>SyncRibbon.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="app.config" />
-    <Content Include="client_secret.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <None Include="Outlook Calendar Sync_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

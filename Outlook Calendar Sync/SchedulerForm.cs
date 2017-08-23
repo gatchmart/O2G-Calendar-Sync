@@ -81,7 +81,7 @@ namespace Outlook_Calendar_Sync
             if ( SilentSync_CB.Checked )
             {
                 task.SilentSync = true;
-                task.Precedence = Precedence_CB.SelectedIndex + 1;
+                task.Precedence = (Precedence)Precedence_CB.SelectedIndex + 1;
             }
 
             task.LastRunTime = DateTime.MinValue;
@@ -123,7 +123,7 @@ namespace Outlook_Calendar_Sync
                 SilentSync_CB.Checked = task.SilentSync;
 
                 if ( task.SilentSync )
-                    Precedence_CB.SelectedIndex = task.Precedence - 1;
+                    Precedence_CB.SelectedIndex = (int)task.Precedence - 1;
 
             } else
             {
@@ -171,7 +171,7 @@ namespace Outlook_Calendar_Sync
                     if ( SilentSync_CB.Checked )
                     {
                         task.SilentSync = true;
-                        task.Precedence = Precedence_CB.SelectedIndex + 1;
+                        task.Precedence = (Precedence)Precedence_CB.SelectedIndex + 1;
                     }
 
                     m_scheduler.UpdateTask( task, Calendars_LB.SelectedIndex );

@@ -133,7 +133,7 @@ namespace Outlook_Calendar_Sync {
                 e.Cancel = true;
                 Hide();
 
-                m_syncer.Action = 0;
+                m_syncer.Action = CalendarItemAction.Nothing;
                 m_syncer.PerformActionToAll = false;
             }
         }

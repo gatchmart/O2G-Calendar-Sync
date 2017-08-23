@@ -15,38 +15,62 @@ namespace Outlook_Calendar_Sync {
     /// </summary>
     public class Syncer {
 
+        /// <summary>
+        /// This is the instance of the Syncer to be used. 
+        /// </summary>
         public static Syncer Instance => _instance ?? ( _instance = new Syncer() );
         private static Syncer _instance;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
         public delegate void WriteToStatus( string text );
 
+        /// <summary>
+        /// This delegate is used to send status messages
+        /// </summary>
         public WriteToStatus StatusUpdate;
 
+        /// <summary>
+        /// Will the same action be performed to all events with changes?
+        /// </summary>
         public bool PerformActionToAll { get; set; }
 
-        public int Action { get; set; }
-
-        public Folder Folder { get; set; }
+        /// <summary>
+        /// This is the action to be performed when PerformActionToAll is true
+        /// </summary>
+        public CalendarItemAction Action { get; set; }
 
         private bool m_syncingPairs;
         private bool m_silentSync;
-        private int m_precedence;
+        private Precedence m_precedence;
         private readonly OutlookSync m_outlookSync;
         private readonly GoogleSync m_googleSync;
         private readonly Archiver m_archiver;
 
+        /// <summary>
+        /// Default constructor, sets all variables to their default values
+        /// </summary>
         public Syncer() {
-            Action = 0;
+            Action = CalendarItemAction.Nothing;
             PerformActionToAll = false;
             m_syncingPairs = false;
 
             m_outlookSync = OutlookSync.Syncer;
             m_googleSync = GoogleSync.Syncer;
             m_archiver = Archiver.Instance;
-            m_precedence = 0;
+            m_precedence = Precedence.None;
             m_silentSync = false;
         }
 
+        /// <summary>
+        /// Performs the actual pulling of events and appointments, compares them, and returns a list of the ones with differences.
+        /// </summary>
+        /// <param name="byDate">Do you want to restrict the query by date?</param>
+        /// <param name="start">The start date of the restriction</param>
+        /// <param name="end">The end date of the restriction</param>
+        /// <returns>A list of calendar items that need to be updated or added.</returns>
         public List<CalendarItem> GetFinalList(bool byDate = false, DateTime start = default( DateTime ), DateTime end = default( DateTime )) {
             List<CalendarItem> outlookList;
             List<CalendarItem> googleList;
@@ -72,6 +96,12 @@ namespace Outlook_Calendar_Sync {
             return finalList;
         }
 
+        /// <summary>
+        /// Compares the two lists of calendar items and finds the differences in the lists.
+        /// </summary>
+        /// <param name="outlookList">The outlook list</param>
+        /// <param name="googleList">The google list</param>
+        /// <returns>A list of calendar items with the appropriate changes specified.</returns>
         private List<CalendarItem> CompareLists(List<CalendarItem> outlookList, List<CalendarItem> googleList )
         {
             var finalList = new List<CalendarItem>();
@@ -119,9 +149,9 @@ namespace Outlook_Calendar_Sync {
 
                         if ( PerformActionToAll )
                         {
-                            if ( Action != 0 )
+                            if ( Action != CalendarItemAction.Nothing )
                             {
-                                calendarItem.Action |= (CalendarItemAction)Action;
+                                calendarItem.Action |= Action;
                                 finalList.Add( calendarItem );
                             }
                         } else
@@ -129,11 +159,11 @@ namespace Outlook_Calendar_Sync {
                             if ( m_silentSync )
                             {
                                 PerformActionToAll = true;
-                                Action = m_precedence == 1
-                                    ? (int) CalendarItemAction.GoogleUpdate
-                                    : m_precedence == 2
-                                        ? (int) CalendarItemAction.OutlookUpdate
-                                        : (int)CalendarItemAction.Nothing;
+                                Action = m_precedence == Precedence.Outlook
+                                    ? CalendarItemAction.GoogleUpdate
+                                    : m_precedence == Precedence.Google
+                                        ? CalendarItemAction.OutlookUpdate
+                                        : CalendarItemAction.Nothing;
                             } else
                             {
                                 var result = DifferencesForm.Show( calendarItem, item );
@@ -150,7 +180,7 @@ namespace Outlook_Calendar_Sync {
                                     calendarItem.Action |= CalendarItemAction.GoogleUpdate;
                                     finalList.Add( calendarItem );
 
-                                    Action = (int)CalendarItemAction.GoogleUpdate;
+                                    Action = CalendarItemAction.GoogleUpdate;
                                     PerformActionToAll = true;
 
                                     // Save Google Version Once
@@ -165,7 +195,7 @@ namespace Outlook_Calendar_Sync {
                                     item.Action |= CalendarItemAction.OutlookUpdate;
                                     finalList.Add( item );
 
-                                    Action = (int)CalendarItemAction.OutlookUpdate;
+                                    Action = CalendarItemAction.OutlookUpdate;
                                     PerformActionToAll = true;
 
                                     // Ignore All
@@ -207,6 +237,12 @@ namespace Outlook_Calendar_Sync {
             return finalList;
         }
 
+        /// <summary>
+        /// Submits the changes requested to the Outlook and Google calendars
+        /// </summary>
+        /// <param name="items">The list of calendar items with the required changes</param>
+        /// <param name="worker">A background worker</param>
+        /// <param name="pairProgress">The completed progress when submitting changes to multiple pairs</param>
         public void SubmitChanges( List<CalendarItem> items, BackgroundWorker worker, float pairProgress = 1 )
         {
             int currentCount = 0;
@@ -262,7 +298,13 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void SynchornizePairs( SyncPair pair, int precedence = 0, bool silentSync = false )
+        /// <summary>
+        /// Synchronizes a SyncPair.
+        /// </summary>
+        /// <param name="pair">The pair to sync</param>
+        /// <param name="precedence">The precendence used when performing silent syncing</param>
+        /// <param name="silentSync">Perform a silent sync?</param>
+        public void SynchornizePairs( SyncPair pair, Precedence precedence = Precedence.None, bool silentSync = false )
         {
             m_precedence = precedence;
             m_silentSync = silentSync;
@@ -270,9 +312,14 @@ namespace Outlook_Calendar_Sync {
             SynchornizePairs( new List<SyncPair> { pair }, new BackgroundWorker());
 
             m_silentSync = false;
-            m_precedence = 0;
+            m_precedence = Precedence.None;
         }
 
+        /// <summary>
+        /// Synchronizes a list of sync pairs
+        /// </summary>
+        /// <param name="pairs">The list of pairs to sync</param>
+        /// <param name="worker">A background work used to perform the sync</param>
         public void SynchornizePairs( List<SyncPair> pairs, BackgroundWorker worker )
         {
             StatusUpdate?.Invoke( "- Starting Sync" );
@@ -311,6 +358,11 @@ namespace Outlook_Calendar_Sync {
             StatusUpdate?.Invoke( "- Sync has been completed." );
         }
 
+        /// <summary>
+        /// Searches through the specified SyncPair and finds events that were deleted.
+        /// </summary>
+        /// <param name="pair">The pair to search</param>
+        /// <returns>A list of IDs of the deleted events</returns>
         public List<string> FindDeletedEvents( SyncPair pair )
         {
             var list = new List<string>();

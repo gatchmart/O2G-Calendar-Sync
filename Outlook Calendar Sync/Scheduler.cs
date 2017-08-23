@@ -73,9 +73,6 @@ namespace Outlook_Calendar_Sync {
             lock ( m_tasks )
             {
                 m_tasks.Remove( task );
-
-                //if ( m_tasks.Count == 0 && m_thread.IsAlive )
-                //    m_thread.Abort();
             }
         }
 
@@ -405,11 +402,8 @@ namespace Outlook_Calendar_Sync {
         /// <summary>
         /// Allows you to set which calendar takes precedence over the other.
         /// This comes in handy if you want a silent sync.
-        /// 0 = Ignore differences
-        /// 1 = Outlook has precedence
-        /// 2 = Google has precedence
         /// </summary>
-        public int Precedence;
+        public Precedence Precedence;
 
         /// <summary>
         /// Allows you to set if the sync will prompt the user when changes have occurred.
@@ -423,7 +417,7 @@ namespace Outlook_Calendar_Sync {
             Event = SchedulerEvent.Manually;
             TimeSpan = 0;
             LastRunTime = DateTime.MinValue;
-            Precedence = 0;
+            Precedence = Precedence.None;
             SilentSync = false;
         }
 
