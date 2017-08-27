@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using Outlook_Calendar_Sync.Properties;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
@@ -8,7 +7,7 @@ namespace Outlook_Calendar_Sync {
     {
 
         private Syncer m_syncer;
-        private Scheduler m_scheduler;
+        private Scheduler.Scheduler m_scheduler;
         private List<Outlook.Items> m_items = new List<Outlook.Items>();
 
         private void ThisAddIn_Startup( object sender, System.EventArgs e ) {
@@ -16,7 +15,7 @@ namespace Outlook_Calendar_Sync {
             ( (Outlook.ApplicationEvents_11_Event) Application ).Quit += ThisAddIn_Quit;
 
             m_syncer = Syncer.Instance;
-            m_scheduler = Scheduler.Instance;
+            m_scheduler = Scheduler.Scheduler.Instance;
 
             var fo = Application.Session.Folders;
             foreach ( Outlook.Folder f in fo )
@@ -25,7 +24,7 @@ namespace Outlook_Calendar_Sync {
                 {
                     if ( f2.FolderPath.Contains( "Calendar" ) )
                     {
-                        Debug.WriteLine( f2.FolderPath );
+                        Log.Write( f2.FolderPath );
                         var items = f2.Items;
                         m_items.Add( items );
                         items.ItemChange += Outlook_ItemChange;
@@ -34,7 +33,7 @@ namespace Outlook_Calendar_Sync {
 
                         foreach ( Outlook.Folder f2Folder in f2.Folders )
                         {
-                            Debug.WriteLine( f2Folder.FolderPath );
+                            Log.Write( f2Folder.FolderPath );
                             var items2 = f2Folder.Items;
                             m_items.Add( items2 );
                             items2.ItemChange += Outlook_ItemChange;
@@ -69,6 +68,7 @@ namespace Outlook_Calendar_Sync {
 
         private void ThisAddIn_Quit()
         {
+            m_scheduler.AboutThread();
             m_scheduler.Save( false );
         }
 

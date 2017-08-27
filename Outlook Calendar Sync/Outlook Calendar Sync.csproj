@@ -226,25 +226,30 @@
       <DependentUpon>DifferencesForm.cs</DependentUpon>
     </Compile>
     <Compile Include="GoogleSync.cs" />
+    <Compile Include="GuidCreator.cs" />
     <Compile Include="InitialLoadForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="InitialLoadForm.Designer.cs">
       <DependentUpon>InitialLoadForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Log.cs" />
     <Compile Include="OutlookSync.cs" />
     <Compile Include="Precedence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ContactItem.cs" />
-    <Compile Include="Scheduler.cs" />
-    <Compile Include="SchedulerForm.cs">
+    <Compile Include="Scheduler\AutoSyncEvent.cs" />
+    <Compile Include="Scheduler\Scheduler.cs" />
+    <Compile Include="Scheduler\SchedulerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SchedulerForm.Designer.cs">
+    <Compile Include="Scheduler\SchedulerForm.Designer.cs">
       <DependentUpon>SchedulerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Scheduler\RetryTask.cs" />
+    <Compile Include="Scheduler\SchedulerTask.cs" />
     <Compile Include="Syncer.cs" />
     <Compile Include="SyncPair.cs" />
     <Compile Include="TimeZoneConverter.cs" />
@@ -269,7 +274,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="SchedulerForm.resx">
+    <EmbeddedResource Include="Scheduler\SchedulerForm.resx">
       <DependentUpon>SchedulerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SyncerForm.resx">

@@ -42,6 +42,11 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public CalendarItemAction Action { get; set; }
 
+        /// <summary>
+        /// Do you want the sync to use a sync token
+        /// </summary>
+        public bool IsUsingSyncToken { get; set; }
+
         private bool m_syncingPairs;
         private bool m_silentSync;
         private Precedence m_precedence;
@@ -55,6 +60,7 @@ namespace Outlook_Calendar_Sync {
         public Syncer() {
             Action = CalendarItemAction.Nothing;
             PerformActionToAll = false;
+            IsUsingSyncToken = false;
             m_syncingPairs = false;
 
             m_outlookSync = OutlookSync.Syncer;
@@ -82,7 +88,9 @@ namespace Outlook_Calendar_Sync {
             } else 
             {
                 outlookList = m_outlookSync.PullListOfAppointments();
-                googleList = m_googleSync.PullListOfAppointments();
+                googleList = IsUsingSyncToken
+                    ? m_googleSync.PullListOfAppointmentsBySyncToken()
+                        : m_googleSync.PullListOfAppointments();
             }
 
             // Check to see what events need to be added to google from outlook

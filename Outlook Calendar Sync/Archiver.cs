@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,17 +25,23 @@ namespace Outlook_Calendar_Sync {
         /// <summary>
         /// Loads the XML data file
         /// </summary>
-        public void Load() {
-            if ( !Directory.Exists( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
-                                    "\\OutlookGoogleSync\\" ) )
+        public void Load()
+        {
+            if ( !Directory.Exists( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" ) )
+            {
                 Directory.CreateDirectory( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
                                            "\\OutlookGoogleSync" );
+                Log.Write( "Created OutlookGoogleSync directory." );
+            }
 
-            if ( File.Exists( m_filePath ) ) {
+            if ( File.Exists( m_filePath ) )
+            {
                 var reader = new XmlDocument();
                 reader.Load( m_filePath );
                 XmlNodeList nodes = reader.GetElementsByTagName( "Calendar" );
                 m_data = new Dictionary<SyncPair, List<string>>();
+
+                Log.Write( "Starting to load Archiver data file..." );
 
                 foreach ( XmlNode node in nodes )
                 {
@@ -70,18 +75,26 @@ namespace Outlook_Calendar_Sync {
                             break;
 
                         case "Events":
-                            list.AddRange( from XmlNode childNode in node.ChildNodes where childNode.Name.Equals( "ID" ) select childNode.InnerText );
+                            list.AddRange( from XmlNode childNode in node.ChildNodes
+                                where childNode.Name.Equals( "ID" )
+                                select childNode.InnerText );
 
                             break;
                     }
 
+                    Log.Write( $"Loaded SyncPair ({pair.GoogleName}, {pair.GoogleId}, {pair.OutlookName}, {pair.OutlookId})" );
 
                     if ( !pair.IsEmpty() )
                         m_data.Add( pair, list );
                 }
 
+                Log.Write( "Completed loading Archiver data file" );
+
             } else
+            {
+                Log.Write( "No Archiver data file found creating an empty list" );
                 m_data = new Dictionary<SyncPair, List<string>>();
+            }
 
         }
 
@@ -96,6 +109,8 @@ namespace Outlook_Calendar_Sync {
             };
 
             XmlWriter writer = XmlWriter.Create( m_filePath, settings );
+
+            Log.Write( "Writing to Archiver data file..." );
 
             writer.WriteStartDocument();
             writer.WriteStartElement( "Calendars" );
@@ -120,11 +135,16 @@ namespace Outlook_Calendar_Sync {
                 writer.WriteEndElement(); // Events
 
                 writer.WriteEndElement(); // Calendar
+
+                Log.Write( $"Wrote SyncPair ({entry.Key.GoogleName}, {entry.Key.GoogleId}, {entry.Key.OutlookName}, {entry.Key.OutlookId})" );
+
             }
             writer.WriteEndElement();
             writer.WriteEndDocument();
 
             writer.Close();
+
+            Log.Write( "Finished writing Archiver data file." );
         }
 
         public List<string> GetListForSyncPair( SyncPair pair )

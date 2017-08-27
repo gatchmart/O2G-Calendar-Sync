@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Xml.Serialization;
 using Outlook = Microsoft.Office.Interop.Outlook;
 using Exception = System.Exception;
 
-namespace Outlook_Calendar_Sync {
+namespace Outlook_Calendar_Sync.Scheduler
+{
 
     public enum SchedulerEvent
     {
@@ -28,21 +28,35 @@ namespace Outlook_Calendar_Sync {
 
         public int Count => m_tasks.Count;
 
-        private readonly string TasksDateFilePath = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "schedulerTasks.xml";
-        private readonly string AutoSyncDateFilePath = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "autoSync.xml";
+        private readonly string TasksDataFilePath =
+            Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" +
+            "schedulerTasks.xml";
+
+        private readonly string AutoSyncDataFilePath =
+            Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" +
+            "autoSync.xml";
+
+        private readonly string RetryDataFilePath =
+            Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" +
+            "retryData.xml";
+
         private List<SchedulerTask> m_tasks;
         private List<AutoSyncEvent> m_autoSyncEvents;
+        private List<RetryTask> m_retryQueue;
         private readonly Thread m_thread;
 
         public Scheduler()
         {
-            if ( File.Exists( TasksDateFilePath ) )
-                Load();
-            else
+            if ( !File.Exists( TasksDataFilePath ) )
                 m_tasks = new List<SchedulerTask>();
 
-            if ( !File.Exists( AutoSyncDateFilePath ) )
+            if ( !File.Exists( AutoSyncDataFilePath ) )
                 m_autoSyncEvents = new List<AutoSyncEvent>();
+
+            if ( !File.Exists( RetryDataFilePath ) )
+                m_retryQueue = new List<RetryTask>();
+
+            Load();
 
             m_thread = new Thread( Tick );
             m_thread.IsBackground = true;
@@ -60,24 +74,23 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void AddTask( SchedulerTask task )
-        {
+        #region List Modifiers
+
+        public void AddTask( SchedulerTask task ) {
             lock ( m_tasks )
             {
                 m_tasks.Add( task );
             }
         }
 
-        public void RemoveTask( SchedulerTask task )
-        {
+        public void RemoveTask( SchedulerTask task ) {
             lock ( m_tasks )
             {
                 m_tasks.Remove( task );
             }
         }
 
-        public void UpdateTask( SchedulerTask task, int index )
-        {
+        public void UpdateTask( SchedulerTask task, int index ) {
             lock ( m_tasks )
             {
                 if ( index >= 0 && index < m_tasks.Count && task != null )
@@ -85,8 +98,21 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public SchedulerTask this[int key]
-        {
+        public void AddRetry( RetryTask task ) {
+            lock ( m_retryQueue )
+            {
+                m_retryQueue.Add( task );
+            }
+        }
+
+        public void RemoveRetry( RetryTask task ) {
+            lock ( m_retryQueue )
+            {
+                m_retryQueue.Remove( task );
+            }
+        }
+
+        public SchedulerTask this[int key] {
             get { return m_tasks[key]; }
             set
             {
@@ -94,8 +120,19 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void Item_Add( object item )
-        {
+        public IEnumerator<SchedulerTask> GetEnumerator() {
+            return m_tasks.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            return GetEnumerator();
+        }
+
+        #endregion
+
+        #region EventHandlers
+
+        public void Item_Add( object item ) {
             lock ( m_autoSyncEvents )
             {
                 Outlook.AppointmentItem aitem = item as Outlook.AppointmentItem;
@@ -121,8 +158,7 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void Item_Change( object item )
-        {
+        public void Item_Change( object item ) {
             lock ( m_autoSyncEvents )
             {
                 Outlook.AppointmentItem aitem = item as Outlook.AppointmentItem;
@@ -148,15 +184,16 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void Item_Remove()
-        {
+        public void Item_Remove() {
             lock ( m_autoSyncEvents )
             {
-                var ase = new AutoSyncEvent {Action = CalendarItemAction.GoogleDelete};
+                var ase = new AutoSyncEvent { Action = CalendarItemAction.GoogleDelete };
                 if ( !m_autoSyncEvents.Contains( ase ) )
                     m_autoSyncEvents.Add( ase );
             }
-        }
+        } 
+
+        #endregion
 
         private void Tick()
         {
@@ -178,21 +215,24 @@ namespace Outlook_Calendar_Sync {
                             {
                                 if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 1 ) ) )
                                 {
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
                                 }
                             } else if ( schedulerTask.Event == SchedulerEvent.Hourly )
                             {
                                 if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromHours( 1 ) ) )
                                 {
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
                                 }
                             } else if ( schedulerTask.Event == SchedulerEvent.Weekly )
                             {
                                 if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromDays( 7 ) ) )
                                 {
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
                                 }
                             } else if ( schedulerTask.Event == SchedulerEvent.CustomTime )
@@ -200,8 +240,19 @@ namespace Outlook_Calendar_Sync {
                                 if ( schedulerTask.LastRunTime <
                                      DateTime.Now.Subtract( TimeSpan.FromMinutes( schedulerTask.TimeSpan ) ) )
                                 {
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence, schedulerTask.SilentSync );
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
+                                }
+                            } else if ( schedulerTask.Event == SchedulerEvent.Automatically )
+                            {
+                                if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromMinutes( 1 ) ) )
+                                {
+                                    Syncer.Instance.IsUsingSyncToken = true;
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
+                                    schedulerTask.LastRunTime = DateTime.Now;
+                                    Syncer.Instance.IsUsingSyncToken = false;
                                 }
                             }
 
@@ -269,49 +320,67 @@ namespace Outlook_Calendar_Sync {
                         m_autoSyncEvents.Clear();
                     }
 
+                    lock ( m_retryQueue )
+                    {
+                        for (int i = 0; i < m_retryQueue.Count; i++)
+                        {
+                            var retry = m_retryQueue[i];
+                            if ( retry.Eligible() && retry.LastRun <
+                                 DateTime.Now.Subtract( TimeSpan.FromMinutes( retry.Delay ) ) )
+                            {
+                                switch ( retry.Action )
+                                {
+                                    case RetryAction.Add:
+                                        GoogleSync.Syncer.Retry = retry;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( retry.Calendar );
+
+                                        GoogleSync.Syncer.AddAppointment( retry.CalendarItem );
+
+                                        GoogleSync.Syncer.Retry = null;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        break;
+                                    case RetryAction.Update:
+                                        GoogleSync.Syncer.Retry = retry;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( retry.Calendar );
+
+                                        GoogleSync.Syncer.UpdateAppointment( retry.CalendarItem );
+
+                                        GoogleSync.Syncer.Retry = null;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        break;
+                                    case RetryAction.Delete:
+                                        GoogleSync.Syncer.Retry = retry;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( retry.Calendar );
+
+                                        GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem );
+
+                                        GoogleSync.Syncer.Retry = null;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        break;
+                                    case RetryAction.DeleteById:
+                                        GoogleSync.Syncer.Retry = retry;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( retry.Calendar );
+
+                                        GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem.ID );
+
+                                        GoogleSync.Syncer.Retry = null;
+                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        break;
+                                    default:
+                                        throw new ArgumentOutOfRangeException();
+                                }
+                            } else if ( !retry.Eligible() )
+                                RemoveRetry( retry );
+                        }
+                    }
+
                     // Sleep the thread for 30 seconds.
                     Thread.Sleep( 30000 );
                 }
 
             } catch ( Exception ex )
             {
-                Debug.WriteLine( ex );
-            }
-        }
-
-        /// <summary>
-        /// Saves the list of scheduled tasks.
-        /// </summary>
-        public void Save( bool runThread = true )
-        {
-            try
-            {
-                if ( m_tasks != null && m_tasks.Count > 0 )
-                {
-                    var serializer = new XmlSerializer( typeof( List<SchedulerTask> ) );
-                    var writer = new StreamWriter( TasksDateFilePath );
-                    serializer.Serialize( writer, m_tasks );
-                    writer.Close();
-
-                    if ( !m_thread.IsAlive && runThread )
-                        m_thread.Start();
-
-                } else if ( File.Exists( TasksDateFilePath ) )
-                    File.Delete( TasksDateFilePath );
-
-                if ( m_autoSyncEvents != null && m_autoSyncEvents.Count > 0 )
-                {
-                    var serializer = new XmlSerializer( typeof( List<AutoSyncEvent> ) );
-                    var writer = new StreamWriter( AutoSyncDateFilePath );
-                    serializer.Serialize( writer, m_autoSyncEvents );
-                    writer.Close();
-
-                } else if ( File.Exists( AutoSyncDateFilePath ) )
-                    File.Delete( AutoSyncDateFilePath );
-
-            } catch ( Exception ex )
-            {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
             }
         }
 
@@ -324,6 +393,57 @@ namespace Outlook_Calendar_Sync {
                 m_thread.Start();
         }
 
+        public void AboutThread()
+        {
+            if ( m_thread.IsAlive )
+                m_thread.Abort();
+        }
+
+        /// <summary>
+        /// Saves the list of scheduled tasks.
+        /// </summary>
+        public void Save( bool runThread = true ) {
+            try
+            {
+                if ( m_tasks != null && m_tasks.Count > 0 )
+                {
+                    var serializer = new XmlSerializer( typeof( List<SchedulerTask> ) );
+                    var writer = new StreamWriter( TasksDataFilePath );
+                    serializer.Serialize( writer, m_tasks );
+                    writer.Close();
+
+                    if ( !m_thread.IsAlive && runThread )
+                        m_thread.Start();
+
+                } else if ( File.Exists( TasksDataFilePath ) )
+                    File.Delete( TasksDataFilePath );
+
+                if ( m_autoSyncEvents != null && m_autoSyncEvents.Count > 0 )
+                {
+                    var serializer = new XmlSerializer( typeof( List<AutoSyncEvent> ) );
+                    var writer = new StreamWriter( AutoSyncDataFilePath );
+                    serializer.Serialize( writer, m_autoSyncEvents );
+                    writer.Close();
+
+                } else if ( File.Exists( AutoSyncDataFilePath ) )
+                    File.Delete( AutoSyncDataFilePath );
+
+                if ( m_retryQueue != null && m_retryQueue.Count > 0 )
+                {
+                    var serializer = new XmlSerializer( typeof( List<RetryTask> ) );
+                    var writer = new StreamWriter( RetryDataFilePath );
+                    serializer.Serialize( writer, m_retryQueue );
+                    writer.Close();
+
+                } else if ( File.Exists( RetryDataFilePath ) )
+                    File.Delete( RetryDataFilePath );
+
+            } catch ( Exception ex )
+            {
+                Log.Write( ex );
+            }
+        }
+
         /// <summary>
         /// Loads the list of scheduled tasks
         /// </summary>
@@ -331,23 +451,29 @@ namespace Outlook_Calendar_Sync {
         {
             try
             {
-                var serializer = new XmlSerializer( typeof( List<SchedulerTask> ) );
-                var reader = new FileStream( TasksDateFilePath, FileMode.Open );
+                XmlSerializer serializer;
+                FileStream reader;
 
-                if ( m_tasks != null )
+                if ( File.Exists( TasksDataFilePath ) )
                 {
-                    m_tasks.Clear();
-                    m_tasks = null;
+                    serializer = new XmlSerializer( typeof( List<SchedulerTask> ) );
+                    reader = new FileStream( TasksDataFilePath, FileMode.Open );
+
+                    if ( m_tasks != null )
+                    {
+                        m_tasks.Clear();
+                        m_tasks = null;
+                    }
+
+                    m_tasks = (List<SchedulerTask>)serializer.Deserialize( reader );
+
+                    reader.Close();
                 }
 
-                m_tasks = (List<SchedulerTask>) serializer.Deserialize( reader );
-
-                reader.Close();
-
-                if ( File.Exists( AutoSyncDateFilePath ) )
+                if ( File.Exists( AutoSyncDataFilePath ) )
                 {
                     serializer = new XmlSerializer( typeof( List<AutoSyncEvent> ) );
-                    reader = new FileStream( AutoSyncDateFilePath, FileMode.Open );
+                    reader = new FileStream( AutoSyncDataFilePath, FileMode.Open );
                     if ( m_autoSyncEvents != null )
                     {
                         m_autoSyncEvents.Clear();
@@ -359,112 +485,27 @@ namespace Outlook_Calendar_Sync {
                     reader.Close();
                 }
 
+                if ( File.Exists( RetryDataFilePath ) )
+                {
+                    serializer = new XmlSerializer( typeof( List<RetryTask> ) );
+                    reader = new FileStream( RetryDataFilePath, FileMode.Open );
+                    if ( m_retryQueue != null )
+                    {
+                        m_retryQueue.Clear();
+                        m_retryQueue = null;
+                    }
+
+                    m_retryQueue = (List<RetryTask>) serializer.Deserialize( reader );
+
+                    reader.Close();
+                }
+
             } catch ( Exception ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
             }
         }
 
-        public IEnumerator<SchedulerTask> GetEnumerator()
-        {
-            return m_tasks.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
-
-    [Serializable]
-    public class SchedulerTask
-    {
-        /// <summary>
-        /// The calendar pair to sync
-        /// </summary>
-        public SyncPair Pair;
-
-        /// <summary>
-        /// When should it sync
-        /// </summary>
-        public SchedulerEvent Event;
-
-        /// <summary>
-        /// The delay between syncs in minutes. This is only used with SchedulerEvent.CustomTime
-        /// </summary>
-        public int TimeSpan;
-
-        /// <summary>
-        /// This tells us the last time the pair was synced
-        /// </summary>
-        public DateTime LastRunTime;
-
-        /// <summary>
-        /// Allows you to set which calendar takes precedence over the other.
-        /// This comes in handy if you want a silent sync.
-        /// </summary>
-        public Precedence Precedence;
-
-        /// <summary>
-        /// Allows you to set if the sync will prompt the user when changes have occurred.
-        /// Use this with the precedence property
-        /// </summary>
-        public bool SilentSync;
-
-        public SchedulerTask()
-        {
-            Pair = null;
-            Event = SchedulerEvent.Manually;
-            TimeSpan = 0;
-            LastRunTime = DateTime.MinValue;
-            Precedence = Precedence.None;
-            SilentSync = false;
-        }
-
-        public override string ToString()
-        {
-            return string.Format( "{0} <=> {1}", Pair.GoogleName, Pair.OutlookName );
-        }
-    }
-
-    [Serializable]
-    public class AutoSyncEvent : IEquatable<AutoSyncEvent>
-    {
-        public SyncPair Pair;
-        public string EntryId;
-        public CalendarItemAction Action;
-
-        public AutoSyncEvent()
-        {
-            Pair = null;
-            EntryId = null;
-            Action = CalendarItemAction.Nothing;
-        }
-
-        public bool Equals( AutoSyncEvent other )
-        {
-            if ( ReferenceEquals( null, other ) ) return false;
-            if ( ReferenceEquals( this, other ) ) return true;
-            return Equals( Pair, other.Pair ) && string.Equals( EntryId, other.EntryId ) && Action == other.Action;
-        }
-
-        public override bool Equals( object obj )
-        {
-            if ( ReferenceEquals( null, obj ) ) return false;
-            if ( ReferenceEquals( this, obj ) ) return true;
-            if ( obj.GetType() != this.GetType() ) return false;
-            return Equals( (AutoSyncEvent) obj );
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = ( Pair != null ? Pair.GetHashCode() : 0 );
-                hashCode = ( hashCode * 397 ) ^ ( EntryId != null ? EntryId.GetHashCode() : 0 );
-                hashCode = ( hashCode * 397 ) ^ (int) Action;
-                return hashCode;
-            }
-        }
     }
 }
+

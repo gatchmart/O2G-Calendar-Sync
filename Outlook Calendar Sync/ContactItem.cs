@@ -30,7 +30,6 @@ namespace Outlook_Calendar_Sync {
             if ( Phone != null )
                 contact.HomeTelephoneNumber = Phone;
 
-            //contact.Display( false );
             contact.Save();
 
             return true;

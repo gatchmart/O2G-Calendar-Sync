@@ -1,4 +1,4 @@
-﻿namespace Outlook_Calendar_Sync
+﻿namespace Outlook_Calendar_Sync.Scheduler
 {
     partial class SchedulerForm
     {

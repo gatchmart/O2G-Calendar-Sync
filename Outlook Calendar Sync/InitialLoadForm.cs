@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Google;
 using Google.Apis.Calendar.v3.Data;
+using Outlook_Calendar_Sync.Scheduler;
 using Settings = Outlook_Calendar_Sync.Properties.Settings;
 
 namespace Outlook_Calendar_Sync {
@@ -53,13 +53,13 @@ namespace Outlook_Calendar_Sync {
                     Next_BTN.Enabled = true;
 
                 } else {
-                    Debug.Write( "GoogleSync.Syncer.PerformAuthentication returned false." );
+                    Log.Write( "GoogleSync.Syncer.PerformAuthentication returned false." );
                     Connected_LBL.Text = "Failed to Connect";
                     Connected_LBL.BackColor = Color.Red;
                     Connected_LBL.Visible = true;
                 }
             } catch ( GoogleApiException error ) {
-                Debug.Write( error );
+                Log.Write( error );
                 Connected_LBL.Text = "Failed to Connect";
                 Connected_LBL.BackColor = Color.Red;
                 Connected_LBL.Visible = true;
@@ -93,7 +93,7 @@ namespace Outlook_Calendar_Sync {
                     m_step++;
                     Next_BTN.Enabled = false;
                     Previous_BTN.Enabled = true;
-                    Scheduler.Instance.Save( false );
+                    Scheduler.Scheduler.Instance.Save( false );
                     break;
 
                 case 2:
@@ -155,7 +155,7 @@ namespace Outlook_Calendar_Sync {
 
                 if ( !Pair_LB.Items.Contains( pair ) ) {
                     Pair_LB.Items.Add( pair );
-                    Scheduler.Instance.AddTask( new SchedulerTask { Event = SchedulerEvent.Automatically, Pair = pair} );
+                    Scheduler.Scheduler.Instance.AddTask( new SchedulerTask { Event = SchedulerEvent.Automatically, Pair = pair} );
                     Next_BTN.Enabled = true;
                 }
             } else
@@ -243,7 +243,7 @@ namespace Outlook_Calendar_Sync {
             Syncer.Instance.StatusUpdate = null;
             Settings.Default.IsInitialLoad = false;
             Settings.Default.Save();
-            Scheduler.Instance.ActivateThread();
+            Scheduler.Scheduler.Instance.ActivateThread();
             Close();
         }
 

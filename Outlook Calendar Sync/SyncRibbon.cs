@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Microsoft.Office.Tools.Ribbon;
+﻿using Microsoft.Office.Tools.Ribbon;
 using Outlook_Calendar_Sync.Properties;
+using Outlook_Calendar_Sync.Scheduler;
 
 namespace Outlook_Calendar_Sync {
     public partial class SyncRibbon {

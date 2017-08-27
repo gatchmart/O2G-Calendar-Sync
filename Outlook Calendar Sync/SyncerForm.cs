@@ -38,7 +38,9 @@ namespace Outlook_Calendar_Sync {
             // Create the SyncPair
             var pair = new SyncPair {
                 GoogleName = googleCal_CB.SelectedItem.ToString(),
-                OutlookName = outlookCal_CB.SelectedItem.ToString()
+                GoogleId = m_googleFolders.Items[googleCal_CB.SelectedIndex].Id,
+                OutlookName = outlookCal_CB.SelectedItem.ToString(),
+                OutlookId = m_outlookFolders[outlookCal_CB.SelectedIndex].EntryID
             };
 
             // Set the current outlook working folder to the folder selected by the user.

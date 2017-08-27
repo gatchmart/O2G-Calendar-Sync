@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Microsoft.Office.Interop.Outlook;
@@ -119,6 +118,26 @@ namespace Outlook_Calendar_Sync {
         public bool NoEndDate { get; set; }
 
         /// <summary>
+        /// Default contructor used for Serialization
+        /// </summary>
+        public Recurrence()
+        {
+            DayOfMonth = 0;
+            DaysOfTheWeekMask = 0;
+            Duration = 0;
+            End = "";
+            Start = "";
+            Instance = 0;
+            Interval = 0;
+            MonthOfYear = 0;
+            NoEndDate = false;
+            Occurrences = 0;
+            PatternStart = "";
+            PatternEnd = "";
+            Type = 0;
+        }
+
+        /// <summary>
         /// Creates a Recurrence object
         /// </summary>
         /// <param name="rrule">The Google recurrence string</param>
@@ -220,7 +239,7 @@ namespace Outlook_Calendar_Sync {
 
                 PatternStart = calItem.Start;
             } catch ( Exception ex ) {
-                Debug.WriteLine( "An Error occured when trying to parse Google Recurrence data, " + ex.Message );
+                Log.Write( "An Error occured when trying to parse Google Recurrence data, " + ex.Message );
             }
         }
 

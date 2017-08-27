@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
 
-namespace Outlook_Calendar_Sync
+namespace Outlook_Calendar_Sync.Scheduler
 {
 
     public partial class SchedulerForm : Form
@@ -178,7 +177,7 @@ namespace Outlook_Calendar_Sync
                 }
             } catch ( ArgumentOutOfRangeException ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
                 MessageBox.Show( this,
                     "There was an invalid index selected in the application. Unable to update the task.", ProductName,
                     MessageBoxButtons.OK, MessageBoxIcon.Error );

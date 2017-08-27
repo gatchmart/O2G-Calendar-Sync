@@ -102,7 +102,7 @@ namespace Outlook_Calendar_Sync {
 
             } catch ( NullReferenceException )
             {
-                Debug.WriteLine( "'folder' was null" );
+                Log.Write( "'folder' was null" );
             }
 
             return calList;
@@ -127,7 +127,7 @@ namespace Outlook_Calendar_Sync {
 
             } catch ( NullReferenceException )
             {
-                Debug.WriteLine( "'folder' was null" );
+                Log.Write( "'folder' was null" );
             }
 
             return calList;
@@ -162,7 +162,7 @@ namespace Outlook_Calendar_Sync {
                 }
             } catch ( COMException ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
             }
 
             return null;
@@ -281,7 +281,7 @@ namespace Outlook_Calendar_Sync {
                 + startTime.ToString( "g" )
                 + "' AND [End] <= '"
                 + endTime.ToString( "g" ) + "'";
-            Debug.WriteLine( filter );
+            Log.Write( filter );
 
             try {
                 Items calItems = folder.Items;

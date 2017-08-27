@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,6 +15,7 @@ using Google.Apis.Services;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
 using Outlook_Calendar_Sync.Properties;
+using Outlook_Calendar_Sync.Scheduler;
 
 namespace Outlook_Calendar_Sync {
 
@@ -29,18 +30,24 @@ namespace Outlook_Calendar_Sync {
         public static GoogleSync Syncer => _instance ?? ( _instance = new GoogleSync() );
         private static GoogleSync _instance;
 
-        private string m_currentCalendar;
+        /// <summary>
+        /// The retry action is used when trying an action
+        /// </summary>
+        public RetryTask Retry;
 
         private readonly string[] m_scopes = { CalendarService.Scope.Calendar };
         private readonly string m_workingDirectory =
-            Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\";
+            Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
+            "\\OutlookGoogleSync\\credentials\\Outlook-Google-Sync.json";
 
         private const string APPLICATION_NAME = "Outlook Google Calendar Sync";
         private const int DEFAULT_CANCEL_TIME_OUT = 60000;
 
+        private string m_currentCalendar;
         private CalendarService m_service;
         private CalendarList m_calendarList;
         private DateTime m_lastUpdate;
+        private readonly FileDataStore m_fileDataStore;
 
         /// <summary>
         /// The default constructor for GoogleSync. This should never be called directly. You should always use GoogleSync.Syncer
@@ -49,6 +56,7 @@ namespace Outlook_Calendar_Sync {
             m_currentCalendar = "primary";
             m_lastUpdate = DateTime.MinValue;
             m_calendarList = null;
+            m_fileDataStore = new FileDataStore( m_workingDirectory, true );
         }
 
         /// <summary>
@@ -65,12 +73,46 @@ namespace Outlook_Calendar_Sync {
                 var e = item.GetGoogleCalendarEvent();
                 m_service.Events.Insert( e, m_currentCalendar ).Execute();
 
+                Log.Write( $"Adding {item.Subject} Appointment to Google" );
+
                 Archiver.Instance.Add( e.Id );
+
+                Retry?.Successful();
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to add an event to google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to add an event to google. Review the log file to get more information.", item, RetryAction.Add );
+            }
+        }
+
+        /// <summary>
+        /// Pull a complete list of appointments for the set calendar and retreives the sync token.
+        /// </summary>
+        /// <returns>List of CalendarItems</returns>
+        public List<CalendarItem> PullListOfAppointmentsBySyncToken() {
+            try
+            {
+                if ( m_service == null )
+                    PerformAuthentication();
+
+                Log.Write( $"Pulling a list of Google Appointments from {m_currentCalendar} with sync token." );
+
+                EventsResource.ListRequest list = m_service.Events.List( m_currentCalendar );
+
+                string syncToken = m_fileDataStore.GetAsync<string>( m_currentCalendar + " - Sync Token" ).Result;
+                if ( !string.IsNullOrEmpty( syncToken ) )
+                    list.SyncToken = syncToken;
+
+                List<CalendarItem> items = PullListOfAppointments( list, ref syncToken );
+
+                m_fileDataStore.StoreAsync( m_currentCalendar + " - Sync Token", syncToken );
+
+                return items;
+            } catch ( GoogleApiException ex )
+            {
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to pull a list of events from google." );
+                return null;
             }
         }
 
@@ -78,40 +120,21 @@ namespace Outlook_Calendar_Sync {
         /// Pull a complete list of appointments for the set calendar
         /// </summary>
         /// <returns>List of CalendarItems</returns>
-        public List<CalendarItem> PullListOfAppointments() {
+        public List<CalendarItem> PullListOfAppointments()
+        {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                EventsResource.ListRequest list = m_service.Events.List( m_currentCalendar );
+                string token = "";
 
-                List<CalendarItem> items = new List<CalendarItem>();
+                Log.Write( $"Pulling a list of Google Appointments from {m_currentCalendar}." );
 
-                // Iterate over the events in the specified calendar
-                string pageToken = null;
-                do
-                {
-                    EventsResource.ListRequest list = m_service.Events.List( m_currentCalendar );
-                    list.PageToken = pageToken;
-                    Events events = list.Execute();
-                    List<Event> i = events.Items.ToList();
-
-                    foreach ( var @event in i )
-                    {
-                        var cal = new CalendarItem();
-                        cal.LoadFromGoogleEvent( @event );
-                        if ( !items.Exists( x => x.ID.Equals( cal.ID ) ) )
-                            items.Add( cal );
-                    }
-
-                    pageToken = events.NextPageToken;
-                } while ( pageToken != null );
-
+                var items = PullListOfAppointments( list, ref token );
                 return items;
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to pull a list of events from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to pull a list of events from the Google calendar, " + m_currentCalendar );
                 return null;
             }
         }
@@ -129,6 +152,8 @@ namespace Outlook_Calendar_Sync {
                     PerformAuthentication();
 
                 List<CalendarItem> items = new List<CalendarItem>();
+
+                Log.Write( $"Pulling a list of Google Appointments by date from {m_currentCalendar}." );
 
                 // Iterate over the events in the specified calendar
                 string pageToken = null;
@@ -156,9 +181,8 @@ namespace Outlook_Calendar_Sync {
                 return items;
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to pull a list of events from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to pull a list of events from google." );
                 return null;
             }
         }
@@ -174,21 +198,26 @@ namespace Outlook_Calendar_Sync {
                 if ( m_service == null )
                     PerformAuthentication();
 
+                Log.Write( $"Looking for a Google Appointment from {m_currentCalendar} with ID {id}." );
+
                 var item = m_service.Events.Get( m_currentCalendar, id ).Execute();
                 if ( item != null )
                 {
                     var calEvent = new CalendarItem();
                     calEvent.LoadFromGoogleEvent( item );
 
+                    Log.Write( $"Found Google appointment with ID {id}." );
+
                     return calEvent;
                 }
+
+                Log.Write( $"Could not find Google appointment with ID {id}." );
 
                 return null;
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to pull a list of events from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to pull a list of events from google." );
                 return null;
             }
         }
@@ -201,6 +230,8 @@ namespace Outlook_Calendar_Sync {
         public CalendarList PullCalendars( bool forceRefresh ) {
             if ( forceRefresh )
                 m_lastUpdate = DateTime.MinValue;
+
+            Log.Write( $"Performed forced refresh of Google calendars." );
 
             return PullCalendars();
         }
@@ -223,16 +254,17 @@ namespace Outlook_Calendar_Sync {
                     m_lastUpdate = DateTime.Now;
                 }
 
+                Log.Write( "Pulled the list of Google calendars." );
+
                 return m_calendarList;
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to pull a list of calendars from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to pull a list of calendars from google." );
                 return null;
             } catch ( TokenResponseException ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
                 return null;
             }
         }
@@ -249,11 +281,13 @@ namespace Outlook_Calendar_Sync {
 
                 m_service.Events.Update( ev.GetGoogleCalendarEvent(), m_currentCalendar, ev.ID ).Execute();
 
+                Log.Write( $"Updated Google appointment, {ev.Subject}." );
+                Retry?.Successful();
+
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to update an event on google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to update an event on google.", ev, RetryAction.Update );
             }
         }
 
@@ -282,16 +316,20 @@ namespace Outlook_Calendar_Sync {
                         foreach ( var @event in list )
                             m_service.Events.Delete( m_currentCalendar, @event.Id ).Execute();
 
+                        Log.Write( $"Deleted Google recurring appointment {ev.Subject}." );
+
                     } while ( pageToken != null );
                 } else
+                {
                     m_service.Events.Delete( m_currentCalendar, ev.ID ).Execute();
+                    Log.Write( $"Deleted Google appointment {ev.Subject}." );
+                }
 
                 Archiver.Instance.Delete( ev.ID );
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to delete an event from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to delete an event from google.", ev, RetryAction.Delete );
             }
         }
 
@@ -306,13 +344,13 @@ namespace Outlook_Calendar_Sync {
                     PerformAuthentication();
 
                 m_service.Events.Delete( m_currentCalendar, id ).Execute();
+                Log.Write( $"Deleted Google appointment with ID, {id}." );
 
                 Archiver.Instance.Delete( id );
             } catch ( GoogleApiException ex )
             {
-                Debug.Write( ex );
-                MessageBox.Show( "There was an error when trying to delete an event from google.", "Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error );
+                Log.Write( ex );
+                HandleException( ex, "There was an error when trying to delete an event from google.", new CalendarItem{ ID = id }, RetryAction.DeleteById );
             }
         }
 
@@ -321,7 +359,9 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         /// <param name="folder">The ID of the calendar</param>
         /// <param name="defaultFoler">Do you want to reset to the default folder? If you do you can leave folder blank.</param>
-        public void SetGoogleWorkingFolder( string folder, bool defaultFoler = false ) {
+        public void SetGoogleWorkingFolder( string folder, bool defaultFoler = false )
+        {
+            Log.Write( $"Set Google working folder to, {( defaultFoler ? "primary" : folder )}" );
             m_currentCalendar = defaultFoler ? "primary" : folder;
         }
 
@@ -342,13 +382,14 @@ namespace Outlook_Calendar_Sync {
 
             try
             {
-                m_currentCalendar = "primary";
+                //m_currentCalendar = "primary";
                 UserCredential credential;
                 byte[] secrets = Resources.client_secret;
 
+                Log.Write( "Performing Google authentication" );
+
                 using ( var stream = new MemoryStream( secrets ) )
                 {
-                    var credPath = Path.Combine( m_workingDirectory, ".credentials\\Outlook-Google-Sync.json" );
                     var cancel = new CancellationTokenSource( DEFAULT_CANCEL_TIME_OUT );
 
                     credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -356,7 +397,7 @@ namespace Outlook_Calendar_Sync {
                             m_scopes,
                             "user",
                             cancel.Token,
-                            new FileDataStore( credPath, true ) )
+                            m_fileDataStore )
                         .Result;
 
                     if ( credential.Token.IsExpired( SystemClock.Default ) )
@@ -364,7 +405,7 @@ namespace Outlook_Calendar_Sync {
                         GoogleWebAuthorizationBroker.ReauthorizeAsync( credential, cancel.Token );
                     }
 
-                    Debug.WriteLine( "Credential file saved to: " + credPath );
+                    Log.Write( "Credential file saved to: " + m_workingDirectory );
                 }
 
                 // Create Google Calendar API service.
@@ -377,14 +418,14 @@ namespace Outlook_Calendar_Sync {
                 return true;
             } catch ( GoogleApiException ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
                 MessageBox.Show(
                     "There has been an error when trying to authenticate the user. Please review the error log for more information.",
                     "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error );
                 return false;
             } catch ( AggregateException ex )
             {
-                Debug.WriteLine( ex );
+                Log.Write( ex );
 
                 if ( ex.InnerException != null && ex.InnerException.GetType() == typeof( TaskCanceledException ) )
                     MessageBox.Show( "The authorization timed out. Please try again.", "Oh no", MessageBoxButtons.OK,
@@ -396,5 +437,72 @@ namespace Outlook_Calendar_Sync {
                 return false;
             }
         }
+
+        private List<CalendarItem> PullListOfAppointments( EventsResource.ListRequest list, ref string syncToken )
+        {
+            // Iterate over the events in the specified calendar
+            List<CalendarItem> items = new List<CalendarItem>();
+            string pageToken = null;
+            Events events = null;
+            do
+            {
+                list.PageToken = pageToken;
+                events = list.Execute();
+                List<Event> i = events.Items.ToList();
+
+                foreach ( var @event in i )
+                {
+                    var cal = new CalendarItem();
+                    cal.LoadFromGoogleEvent( @event );
+                    if ( !items.Exists( x => x.ID.Equals( cal.ID ) ) )
+                        items.Add( cal );
+                }
+
+                pageToken = events.NextPageToken;
+            } while ( pageToken != null );
+            syncToken = events.NextSyncToken;
+
+                return items;
+        }
+
+        private void HandleException( GoogleApiException ex, string errorMsg, CalendarItem item = null, RetryAction action = 0 )
+        {
+            if ( ex.HttpStatusCode == HttpStatusCode.BadRequest || ex.HttpStatusCode == HttpStatusCode.InternalServerError )
+            {
+                MessageBox.Show( errorMsg, "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error );
+            } else if ( ex.HttpStatusCode == HttpStatusCode.Unauthorized )
+            {
+                // Reauthenticate
+                m_service.Dispose();
+                m_service = null;
+                PerformAuthentication();
+
+                CreateRetry( item, action );
+            } else if ( ex.HttpStatusCode == HttpStatusCode.Conflict )
+            {
+                if ( item != null )
+                    item.ID = GuidCreator.Create();
+
+                CreateRetry( item, action );
+            } else if ( ex.HttpStatusCode == HttpStatusCode.Forbidden )
+            {
+                CreateRetry( item, action );
+            }
+        }
+
+        private void CreateRetry( CalendarItem item, RetryAction action )
+        {
+            if ( Retry == null )
+            {
+                var retry = new RetryTask( item, m_currentCalendar, action );
+                Scheduler.Scheduler.Instance.AddRetry( retry );
+            } else
+            {
+                Retry.RetryFailed();
+                Retry = null;
+            }
+        }
     }
+
+    
 }

@@ -9,6 +9,7 @@ using Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
 
+    [Serializable]
     public sealed class Attendee : IEquatable<Attendee> {
         public string Name { get; set; }
         public string Email { get; set; }
@@ -46,6 +47,7 @@ namespace Outlook_Calendar_Sync {
     }
 
     [Flags]
+    [Serializable]
     public enum CalendarItemAction {
         Nothing = 0,
         GoogleUpdate = 1,
@@ -57,8 +59,9 @@ namespace Outlook_Calendar_Sync {
         GoogleDelete = 64,
         OutlookDelete = 128
     }
-    
+
     [Flags]
+    [Serializable]
     public enum CalendarItemChanges {
         Nothing = 0,
         StartDate = 1,
@@ -74,6 +77,7 @@ namespace Outlook_Calendar_Sync {
         CalId = 1024
     }
 
+    [Serializable]
     public sealed class CalendarItem : IEquatable<CalendarItem> {
         // The date time format string used to properly format the start and end dates
         internal const string DateTimeFormatString = "yyyy-MM-ddTHH:mm:sszzz";
@@ -191,7 +195,8 @@ namespace Outlook_Calendar_Sync {
         /// <param name="item">The AppointmentItem to edit</param>
         /// <returns>An Outlook AppointmentItem representation of this CalendarItem</returns>
         public AppointmentItem GetOutlookAppointment( AppointmentItem item ) {
-            try {
+            try
+            {
                 item.Start = DateTime.Parse( Start );
                 item.End = DateTime.Parse( End );
                 item.Location = Location;
@@ -214,37 +219,43 @@ namespace Outlook_Calendar_Sync {
                 p.Value = ID;
                 d.Value = iCalID;
 
-                if ( !m_isUsingDefaultReminders ) {
+                if ( !m_isUsingDefaultReminders )
+                {
                     item.ReminderMinutesBeforeStart = ReminderTime;
                     item.ReminderSet = true;
                 }
 
-                if ( Recurrence != null ) {
+                if ( Recurrence != null )
+                {
                     var pattern = item.GetRecurrencePattern();
                     Recurrence.GetOutlookPattern( ref pattern );
                 }
-                 
-                foreach ( var attendee in Attendees ) {
+
+                foreach ( var attendee in Attendees )
+                {
                     var recipt = item.Recipients.Add( attendee.Name );
                     bool result = recipt.Resolve();
 
-                    if ( !result ) {
+                    if ( !result )
+                    {
                         ContactItem contact = new ContactItem( attendee.Name, attendee.Email );
                         result = contact.CreateContact();
                     }
 
                     result &= recipt.Resolve();
-                    if ( result ) {
+                    if ( result )
+                    {
                         recipt.AddressEntry.Address = attendee.Email;
                         recipt.Type = attendee.Required
-                            ? (int) OlMeetingRecipientType.olRequired
-                            : (int) OlMeetingRecipientType.olOptional;
+                            ? (int)OlMeetingRecipientType.olRequired
+                            : (int)OlMeetingRecipientType.olOptional;
                     }
                 }
 
                 return item;
-            } catch ( COMException ex ) {
-                Console.WriteLine(ex);
+            } catch ( COMException ex )
+            {
+                Console.WriteLine( ex );
                 MessageBox.Show(
                     "CalendarItem: There has been an error when trying to create a outlook appointment item from a CalendarItem.", "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error );
             }
@@ -258,31 +269,41 @@ namespace Outlook_Calendar_Sync {
         /// <returns>Google Event of the CalendarItem</returns>
         public Event GetGoogleCalendarEvent() {
             var st = IsAllDayEvent
-                ? new EventDateTime {
+                ? new EventDateTime
+                {
                     Date = Start.Substring( 0, 10 )
                 }
-                : new EventDateTime {
+                : new EventDateTime
+                {
                     DateTime = DateTime.Parse( Start ),
                     TimeZone = StartTimeZone
                 };
 
             var en = IsAllDayEvent
-                ? new EventDateTime {
+                ? new EventDateTime
+                {
                     Date = End.Substring( 0, 10 )
                 }
-                : new EventDateTime {
+                : new EventDateTime
+                {
                     DateTime = DateTime.Parse( End ),
                     TimeZone = EndTimeZone
                 };
 
-            var e = new Event {
-                Summary = Subject, Description = Body, Start = st, End = en, Location = Location
+            var e = new Event
+            {
+                Summary = Subject,
+                Description = Body,
+                Start = st,
+                End = en,
+                Location = Location
             };
 
             if ( !string.IsNullOrEmpty( ID ) )
                 e.Id = ID;
 
-            if ( !m_isUsingDefaultReminders ) {
+            if ( !m_isUsingDefaultReminders )
+            {
                 if ( e.Reminders == null )
                     e.Reminders = new Event.RemindersData();
 
@@ -295,14 +316,18 @@ namespace Outlook_Calendar_Sync {
                 };
             }
 
-            if ( Recurrence != null ) 
+            if ( Recurrence != null )
                 e.Recurrence = new string[] { Recurrence.GetGoogleRecurrenceString() };
 
             var att = new EventAttendee[Attendees.Count];
-            for ( int i = 0; i < Attendees.Count; i++ ) {
+            for ( int i = 0; i < Attendees.Count; i++ )
+            {
                 var a = Attendees[i];
-                att[i] = new EventAttendee {
-                    Email = a.Email, Optional = !a.Required, DisplayName = a.Name
+                att[i] = new EventAttendee
+                {
+                    Email = a.Email,
+                    Optional = !a.Required,
+                    DisplayName = a.Name
                 };
             }
 
@@ -327,24 +352,30 @@ namespace Outlook_Calendar_Sync {
             iCalID = ev.ICalUID;
 
             IsAllDayEvent = ( ev.Start.DateTimeRaw == null && ev.End.DateTimeRaw == null );
-           
+
             if ( ev.Reminders.Overrides != null )
                 ReminderTime = ev.Reminders.Overrides.First( x => x.Method == "email" || x.Method == "popup" ).Minutes ?? 0;
-            else {
+            else
+            {
                 m_isUsingDefaultReminders = true;
                 ReminderTime = DEFAULT_REMINDER_TIME;
             }
 
-            if ( ev.Recurrence != null ) 
+            if ( ev.Recurrence != null )
                 Recurrence = new Recurrence( ev.Recurrence[0], this );
 
-            if ( ev.Attendees != null ) {
-                foreach ( var eventAttendee in ev.Attendees ) {
+            if ( ev.Attendees != null )
+            {
+                foreach ( var eventAttendee in ev.Attendees )
+                {
                     if ( string.IsNullOrEmpty( eventAttendee.DisplayName ) || string.IsNullOrEmpty( eventAttendee.Email ) )
                         continue;
-                    
-                    Attendees.Add( new Attendee {
-                        Name = eventAttendee.DisplayName ?? "" , Email = eventAttendee.Email ?? "", Required = !( eventAttendee.Optional ?? true )
+
+                    Attendees.Add( new Attendee
+                    {
+                        Name = eventAttendee.DisplayName ?? "",
+                        Email = eventAttendee.Email ?? "",
+                        Required = !( eventAttendee.Optional ?? true )
                     } );
                 }
             }
@@ -375,17 +406,21 @@ namespace Outlook_Calendar_Sync {
             var icalProp = item.UserProperties.Find( "iCalID", true );
 
             // Check to make sure they are not null and set their values
-            if ( idProp != null && icalProp != null ) {
+            if ( idProp != null && icalProp != null )
+            {
                 ID = idProp.Value;
                 iCalID = icalProp.Value;
-            } else if ( idProp != null ) {
+            } else if ( idProp != null )
+            {
                 ID = idProp.Value;
-            } else { 
+            } else
+            {
                 // If both UserProperties are null create an ID
-                if ( createID ) {
+                if ( createID )
+                {
                     Action |= CalendarItemAction.OutlookUpdate;
                     Action |= CalendarItemAction.GeneratedId;
-                    ID = Guid.NewGuid().ToString().Replace( "-", "" );
+                    ID = item.EntryID;
 
                     UserProperties prop = item.UserProperties;
                     var p = prop.Add( "ID", OlUserPropertyType.olText );
@@ -400,15 +435,18 @@ namespace Outlook_Calendar_Sync {
             }
 
             // Check if the event is recurring
-            if ( item.IsRecurring ) {
+            if ( item.IsRecurring )
+            {
                 var recure = item.GetRecurrencePattern();
                 Recurrence = new Recurrence( recure );
                 Recurrence.AdjustRecurrenceOutlookPattern( item.Start, item.End );
             }
 
             // Add attendees
-            if ( !string.IsNullOrEmpty( item.OptionalAttendees ) ) {
-                if ( item.OptionalAttendees.Contains( ";" ) ) {
+            if ( !string.IsNullOrEmpty( item.OptionalAttendees ) )
+            {
+                if ( item.OptionalAttendees.Contains( ";" ) )
+                {
                     var attendees = item.OptionalAttendees.Split( ';' );
                     foreach ( var attendee in attendees )
                         Attendees.Add( new Attendee( attendee, false ) );
@@ -417,8 +455,10 @@ namespace Outlook_Calendar_Sync {
             }
 
             // Grab the required attendees.
-            if ( !string.IsNullOrEmpty( item.RequiredAttendees ) ) {
-                if ( item.RequiredAttendees.Contains( ";" ) ) {
+            if ( !string.IsNullOrEmpty( item.RequiredAttendees ) )
+            {
+                if ( item.RequiredAttendees.Contains( ";" ) )
+                {
                     var attendees = item.RequiredAttendees.Split( ';' );
                     foreach ( var attendee in attendees )
                         Attendees.Add( new Attendee( attendee, true ) );
@@ -455,7 +495,7 @@ namespace Outlook_Calendar_Sync {
             if ( !e.Equals( ee ) )
                 Changes |= CalendarItemChanges.EndDate;
 
-            if ( !Subject.Equals( other.Subject ))
+            if ( !Subject.Equals( other.Subject ) )
                 Changes |= CalendarItemChanges.Subject;
 
             if ( !string.IsNullOrEmpty( Location ) && !string.IsNullOrEmpty( other.Location ) )
@@ -466,7 +506,7 @@ namespace Outlook_Calendar_Sync {
                 if ( !Body.Equals( other.Body ) )
                     Changes |= CalendarItemChanges.Body;
 
-            if ( !string.IsNullOrEmpty( StartTimeZone ) && !string.IsNullOrEmpty(other.StartTimeZone ) )
+            if ( !string.IsNullOrEmpty( StartTimeZone ) && !string.IsNullOrEmpty( other.StartTimeZone ) )
                 if ( !StartTimeZone.Equals( other.StartTimeZone ) )
                     Changes |= CalendarItemChanges.StartTimeZone;
 
@@ -483,10 +523,11 @@ namespace Outlook_Calendar_Sync {
                 if ( !Attendees.All( other.Attendees.Contains ) )
                     Changes |= CalendarItemChanges.Attendees;
 
-            if ( Recurrence != null && other.Recurrence != null ) {
+            if ( Recurrence != null && other.Recurrence != null )
+            {
                 if ( Recurrence.Equals( other.Recurrence ) )
                     Changes |= CalendarItemChanges.Recurrence;
-            } else if ( Recurrence != null || other.Recurrence != null)
+            } else if ( Recurrence != null || other.Recurrence != null )
                 Changes |= CalendarItemChanges.Recurrence;
 
             if ( !iCalID.Equals( other.iCalID ) )
@@ -509,7 +550,8 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( "\tReminder Time: " + ReminderTime );
             builder.AppendLine( "\tUsing Default Reminder: " + ( m_isUsingDefaultReminders ? "Yes" : "No" ) );
 
-            if ( Attendees != null && Attendees.Count > 0 ) {
+            if ( Attendees != null && Attendees.Count > 0 )
+            {
                 builder.AppendLine( "\tAttendees:" );
 
                 foreach ( var attendee in Attendees )
@@ -517,12 +559,14 @@ namespace Outlook_Calendar_Sync {
                                         ( attendee.Required ? "Required" : "Not Required" ) );
             }
 
-            if ( Recurrence != null ) {
+            if ( Recurrence != null )
+            {
                 builder.AppendLine( "\tRecurrence:" );
                 builder.AppendLine( Recurrence.ToString() );
             }
 
-            if ( Changes != CalendarItemChanges.Nothing ) {
+            if ( Changes != CalendarItemChanges.Nothing )
+            {
                 builder.Append( "\tChanges: " );
                 if ( Changes.HasFlag( CalendarItemChanges.StartDate ) )
                     builder.Append( "Change Start Date | " );
@@ -558,7 +602,8 @@ namespace Outlook_Calendar_Sync {
                 builder.AppendLine();
             }
 
-            if ( Action != CalendarItemAction.Nothing ) {
+            if ( Action != CalendarItemAction.Nothing )
+            {
                 builder.Append( "\tAction: " );
                 if ( Action.HasFlag( CalendarItemAction.ContentsEqual ) )
                     builder.Append( "Action Contents Equal | " );
