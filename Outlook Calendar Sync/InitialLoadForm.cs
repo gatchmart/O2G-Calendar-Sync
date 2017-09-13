@@ -155,7 +155,7 @@ namespace Outlook_Calendar_Sync {
 
                 if ( !Pair_LB.Items.Contains( pair ) ) {
                     Pair_LB.Items.Add( pair );
-                    Scheduler.Scheduler.Instance.AddTask( new SchedulerTask { Event = SchedulerEvent.Automatically, Pair = pair} );
+                    Scheduler.Scheduler.Instance.AddTask( new SchedulerTask { Event = SchedulerEvent.Automatically, Pair = pair } );
                     Next_BTN.Enabled = true;
                 }
             } else

@@ -3,33 +3,12 @@ using System.Globalization;
 using System.Text;
 using Microsoft.Office.Interop.Outlook;
 using Exception = System.Exception;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync {
 
     [Serializable]
     public class Recurrence {
-
-        [Serializable]
-        public enum RecurrenceType {
-            Daily = 0,
-            Weekly = 1,
-            Monthly = 2,
-            MonthNth = 3,
-            Yearly = 5,
-            YearNth = 6
-        }
-
-        [Flags]
-        [Serializable]
-        public enum DaysOfWeek {
-            Sunday = 1,
-            Monday = 2,
-            Tuesday = 4,
-            Wednesday = 8,
-            Thursday = 16,
-            Friday = 32,
-            Saturday = 64
-        }
 
         /// <summary>
         /// Returns or sets an RecurrenceType constant specifying the frequency of occurrences for the recurrence pattern

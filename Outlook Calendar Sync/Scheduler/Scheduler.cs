@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Xml.Serialization;
+using Outlook_Calendar_Sync.Enums;
 using Outlook = Microsoft.Office.Interop.Outlook;
 using Exception = System.Exception;
 
@@ -42,7 +43,8 @@ namespace Outlook_Calendar_Sync.Scheduler
 
         private List<SchedulerTask> m_tasks;
         private List<AutoSyncEvent> m_autoSyncEvents;
-        private List<RetryTask> m_retryQueue;
+        private List<RetryTask> m_retryList;
+        private Queue<int> m_retryDeleteQueue;
         private readonly Thread m_thread;
 
         public Scheduler()
@@ -54,7 +56,9 @@ namespace Outlook_Calendar_Sync.Scheduler
                 m_autoSyncEvents = new List<AutoSyncEvent>();
 
             if ( !File.Exists( RetryDataFilePath ) )
-                m_retryQueue = new List<RetryTask>();
+                m_retryList = new List<RetryTask>();
+
+            m_retryDeleteQueue = new Queue<int>();
 
             Load();
 
@@ -99,16 +103,16 @@ namespace Outlook_Calendar_Sync.Scheduler
         }
 
         public void AddRetry( RetryTask task ) {
-            lock ( m_retryQueue )
+            lock ( m_retryList )
             {
-                m_retryQueue.Add( task );
+                m_retryList.Add( task );
             }
         }
 
         public void RemoveRetry( RetryTask task ) {
-            lock ( m_retryQueue )
+            lock ( m_retryList )
             {
-                m_retryQueue.Remove( task );
+                m_retryList.Remove( task );
             }
         }
 
@@ -278,7 +282,7 @@ namespace Outlook_Calendar_Sync.Scheduler
 
                                 // Reset the default working folders.
                                 OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                GoogleSync.Syncer.ResetGoogleWorkingFolder();
                             } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleUpdate )
                             {
                                 // Setup the proper working folders and the CurrentPair
@@ -293,7 +297,7 @@ namespace Outlook_Calendar_Sync.Scheduler
 
                                 // Reset the default working folders.
                                 OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                GoogleSync.Syncer.ResetGoogleWorkingFolder();
                             } else if ( autoSyncEvent.Action == CalendarItemAction.GoogleDelete )
                             {
                                 // Find the deleted appointments in Outlook
@@ -310,7 +314,7 @@ namespace Outlook_Calendar_Sync.Scheduler
 
                                     // Reset the default working folders.
                                     OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-                                    GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                    GoogleSync.Syncer.ResetGoogleWorkingFolder();
                                 }
                             }
                         }
@@ -320,11 +324,12 @@ namespace Outlook_Calendar_Sync.Scheduler
                         m_autoSyncEvents.Clear();
                     }
 
-                    lock ( m_retryQueue )
+                    // Lock the m_retryList to prevent data corruption
+                    lock ( m_retryList )
                     {
-                        for (int i = 0; i < m_retryQueue.Count; i++)
+                        for (int i = 0; i < m_retryList.Count; i++)
                         {
-                            var retry = m_retryQueue[i];
+                            var retry = m_retryList[i];
                             if ( retry.Eligible() && retry.LastRun <
                                  DateTime.Now.Subtract( TimeSpan.FromMinutes( retry.Delay ) ) )
                             {
@@ -337,7 +342,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                                         GoogleSync.Syncer.AddAppointment( retry.CalendarItem );
 
                                         GoogleSync.Syncer.Retry = null;
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        GoogleSync.Syncer.ResetGoogleWorkingFolder();
                                         break;
                                     case RetryAction.Update:
                                         GoogleSync.Syncer.Retry = retry;
@@ -346,7 +351,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                                         GoogleSync.Syncer.UpdateAppointment( retry.CalendarItem );
 
                                         GoogleSync.Syncer.Retry = null;
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        GoogleSync.Syncer.ResetGoogleWorkingFolder();
                                         break;
                                     case RetryAction.Delete:
                                         GoogleSync.Syncer.Retry = retry;
@@ -355,7 +360,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                                         GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem );
 
                                         GoogleSync.Syncer.Retry = null;
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        GoogleSync.Syncer.ResetGoogleWorkingFolder();
                                         break;
                                     case RetryAction.DeleteById:
                                         GoogleSync.Syncer.Retry = retry;
@@ -364,7 +369,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                                         GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem.ID );
 
                                         GoogleSync.Syncer.Retry = null;
-                                        GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+                                        GoogleSync.Syncer.ResetGoogleWorkingFolder();
                                         break;
                                     default:
                                         throw new ArgumentOutOfRangeException();
@@ -390,13 +395,19 @@ namespace Outlook_Calendar_Sync.Scheduler
         public void ActivateThread()
         {
             if ( !m_thread.IsAlive )
+            {
                 m_thread.Start();
+                Log.Write( "Activated Scheduler Thread." );
+            }
         }
 
         public void AboutThread()
         {
             if ( m_thread.IsAlive )
+            {
                 m_thread.Abort();
+                Log.Write( "Aborted Scheduler Thread" );
+            }
         }
 
         /// <summary>
@@ -428,11 +439,11 @@ namespace Outlook_Calendar_Sync.Scheduler
                 } else if ( File.Exists( AutoSyncDataFilePath ) )
                     File.Delete( AutoSyncDataFilePath );
 
-                if ( m_retryQueue != null && m_retryQueue.Count > 0 )
+                if ( m_retryList != null && m_retryList.Count > 0 )
                 {
                     var serializer = new XmlSerializer( typeof( List<RetryTask> ) );
                     var writer = new StreamWriter( RetryDataFilePath );
-                    serializer.Serialize( writer, m_retryQueue );
+                    serializer.Serialize( writer, m_retryList );
                     writer.Close();
 
                 } else if ( File.Exists( RetryDataFilePath ) )
@@ -454,8 +465,11 @@ namespace Outlook_Calendar_Sync.Scheduler
                 XmlSerializer serializer;
                 FileStream reader;
 
+                Log.Write( "Loading Scheduler Data." );
+
                 if ( File.Exists( TasksDataFilePath ) )
                 {
+                    Log.Write( "Found Scheduler Tasks, loading them in." );
                     serializer = new XmlSerializer( typeof( List<SchedulerTask> ) );
                     reader = new FileStream( TasksDataFilePath, FileMode.Open );
 
@@ -468,10 +482,12 @@ namespace Outlook_Calendar_Sync.Scheduler
                     m_tasks = (List<SchedulerTask>)serializer.Deserialize( reader );
 
                     reader.Close();
+                    Log.Write( "Completed loading in scheduler tasks." );
                 }
 
                 if ( File.Exists( AutoSyncDataFilePath ) )
                 {
+                    Log.Write( "Found Scheduler Tasks, loading them in." );
                     serializer = new XmlSerializer( typeof( List<AutoSyncEvent> ) );
                     reader = new FileStream( AutoSyncDataFilePath, FileMode.Open );
                     if ( m_autoSyncEvents != null )
@@ -483,21 +499,24 @@ namespace Outlook_Calendar_Sync.Scheduler
                     m_autoSyncEvents = (List<AutoSyncEvent>) serializer.Deserialize( reader );
 
                     reader.Close();
+                    Log.Write( "Completed loading in scheduler tasks." );
                 }
 
                 if ( File.Exists( RetryDataFilePath ) )
                 {
+                    Log.Write( "Found Scheduler Tasks, loading them in." );
                     serializer = new XmlSerializer( typeof( List<RetryTask> ) );
                     reader = new FileStream( RetryDataFilePath, FileMode.Open );
-                    if ( m_retryQueue != null )
+                    if ( m_retryList != null )
                     {
-                        m_retryQueue.Clear();
-                        m_retryQueue = null;
+                        m_retryList.Clear();
+                        m_retryList = null;
                     }
 
-                    m_retryQueue = (List<RetryTask>) serializer.Deserialize( reader );
+                    m_retryList = (List<RetryTask>) serializer.Deserialize( reader );
 
                     reader.Close();
+                    Log.Write( "Completed loading in scheduler tasks." );
                 }
 
             } catch ( Exception ex )

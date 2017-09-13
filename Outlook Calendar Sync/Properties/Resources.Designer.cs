@@ -79,14 +79,5 @@ namespace Outlook_Calendar_Sync.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to true.
-        /// </summary>
-        internal static string UpdateRecurrance {
-            get {
-                return ResourceManager.GetString("UpdateRecurrance", resourceCulture);
-            }
-        }
     }
 }

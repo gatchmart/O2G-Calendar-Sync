@@ -14,6 +14,7 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
+using Outlook_Calendar_Sync.Enums;
 using Outlook_Calendar_Sync.Properties;
 using Outlook_Calendar_Sync.Scheduler;
 
@@ -38,12 +39,14 @@ namespace Outlook_Calendar_Sync {
         private readonly string[] m_scopes = { CalendarService.Scope.Calendar };
         private readonly string m_workingDirectory =
             Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
-            "\\OutlookGoogleSync\\credentials\\Outlook-Google-Sync.json";
+            "\\OutlookGoogleSync\\.credentials\\Outlook-Google-Sync.json";
 
         private const string APPLICATION_NAME = "Outlook Google Calendar Sync";
         private const int DEFAULT_CANCEL_TIME_OUT = 60000;
 
         private string m_currentCalendar;
+        private string m_previousCalendar;
+        private TokenResponse m_credentialToken;
         private CalendarService m_service;
         private CalendarList m_calendarList;
         private DateTime m_lastUpdate;
@@ -67,13 +70,12 @@ namespace Outlook_Calendar_Sync {
         public void AddAppointment( CalendarItem item ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 var e = item.GetGoogleCalendarEvent();
                 m_service.Events.Insert( e, m_currentCalendar ).Execute();
 
-                Log.Write( $"Adding {item.Subject} Appointment to Google" );
+                Log.Write( $"Added {item.Subject} Appointment to Google" );
 
                 Archiver.Instance.Add( e.Id );
 
@@ -92,8 +94,7 @@ namespace Outlook_Calendar_Sync {
         public List<CalendarItem> PullListOfAppointmentsBySyncToken() {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 Log.Write( $"Pulling a list of Google Appointments from {m_currentCalendar} with sync token." );
 
@@ -124,6 +125,8 @@ namespace Outlook_Calendar_Sync {
         {
             try
             {
+                PerformAuthentication();
+
                 EventsResource.ListRequest list = m_service.Events.List( m_currentCalendar );
                 string token = "";
 
@@ -148,8 +151,7 @@ namespace Outlook_Calendar_Sync {
         public List<CalendarItem> PullListOfAppointmentsByDate( DateTime startDate, DateTime endDate ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 List<CalendarItem> items = new List<CalendarItem>();
 
@@ -195,8 +197,7 @@ namespace Outlook_Calendar_Sync {
         public CalendarItem PullAppointmentById( string id ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 Log.Write( $"Looking for a Google Appointment from {m_currentCalendar} with ID {id}." );
 
@@ -247,8 +248,7 @@ namespace Outlook_Calendar_Sync {
                 // Force the list to be updated initially and then every 30 minutes.
                 if ( m_lastUpdate == DateTime.MinValue || m_lastUpdate < DateTime.Now.Subtract( TimeSpan.FromMinutes( 30 ) ) )
                 {
-                    if ( m_service == null )
-                        PerformAuthentication();
+                    PerformAuthentication();
 
                     m_calendarList = m_service.CalendarList.List().Execute();
                     m_lastUpdate = DateTime.Now;
@@ -276,8 +276,7 @@ namespace Outlook_Calendar_Sync {
         public void UpdateAppointment( CalendarItem ev ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 m_service.Events.Update( ev.GetGoogleCalendarEvent(), m_currentCalendar, ev.ID ).Execute();
 
@@ -298,8 +297,7 @@ namespace Outlook_Calendar_Sync {
         public void DeleteAppointment( CalendarItem ev ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 if ( ev.Recurrence != null )
                 {
@@ -340,8 +338,7 @@ namespace Outlook_Calendar_Sync {
         public void DeleteAppointment( string id ) {
             try
             {
-                if ( m_service == null )
-                    PerformAuthentication();
+                PerformAuthentication();
 
                 m_service.Events.Delete( m_currentCalendar, id ).Execute();
                 Log.Write( $"Deleted Google appointment with ID, {id}." );
@@ -358,11 +355,22 @@ namespace Outlook_Calendar_Sync {
         /// Sets the current working folder (calendar) for all additions, deletions, updates, and queries.
         /// </summary>
         /// <param name="folder">The ID of the calendar</param>
-        /// <param name="defaultFoler">Do you want to reset to the default folder? If you do you can leave folder blank.</param>
-        public void SetGoogleWorkingFolder( string folder, bool defaultFoler = false )
+        public void SetGoogleWorkingFolder( string folder )
         {
-            Log.Write( $"Set Google working folder to, {( defaultFoler ? "primary" : folder )}" );
-            m_currentCalendar = defaultFoler ? "primary" : folder;
+            Log.Write( $"Set Google working folder to, { folder }" );
+            m_previousCalendar = m_currentCalendar;
+            m_currentCalendar = folder;
+        }
+
+        /// <summary>
+        /// Resets the working folder back to it's previous setting
+        /// </summary>
+        /// <param name="defaultFoler">Do you want to reset to the default folder? If you do you can leave folder blank.</param>
+        public void ResetGoogleWorkingFolder( bool defaultFoler = false )
+        {
+            Log.Write( $"Set Google working folder to, { ( defaultFoler ? "primary" : m_previousCalendar ) }" );
+            m_currentCalendar = defaultFoler ? "primary" : m_previousCalendar;
+            m_previousCalendar = null;
         }
 
         /// <summary>
@@ -377,12 +385,11 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         /// <returns></returns>
         public bool PerformAuthentication() {
-            if ( m_service != null )
+            if ( m_service != null && m_credentialToken != null && !m_credentialToken.IsExpired( SystemClock.Default ) )
                 return true;
 
             try
             {
-                //m_currentCalendar = "primary";
                 UserCredential credential;
                 byte[] secrets = Resources.client_secret;
 
@@ -400,10 +407,7 @@ namespace Outlook_Calendar_Sync {
                             m_fileDataStore )
                         .Result;
 
-                    if ( credential.Token.IsExpired( SystemClock.Default ) )
-                    {
-                        GoogleWebAuthorizationBroker.ReauthorizeAsync( credential, cancel.Token );
-                    }
+                    m_credentialToken = credential.Token;
 
                     Log.Write( "Credential file saved to: " + m_workingDirectory );
                 }

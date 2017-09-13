@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
+using Outlook_Calendar_Sync.Enums;
 using Settings = Outlook_Calendar_Sync.Properties.Settings;
 
 namespace Outlook_Calendar_Sync {
@@ -68,7 +69,7 @@ namespace Outlook_Calendar_Sync {
 
         private void SyncerForm_Load( object sender, EventArgs e ) {
             OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-            GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+            GoogleSync.Syncer.ResetGoogleWorkingFolder( true );
 
             // Get the list of Google Calendars and load them into googleCal_CB
             m_googleFolders = GoogleSync.Syncer.PullCalendars();

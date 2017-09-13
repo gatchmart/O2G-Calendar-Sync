@@ -212,6 +212,7 @@
   -->
   <ItemGroup>
     <Compile Include="Archiver.cs" />
+    <Compile Include="Attendee.cs" />
     <Compile Include="CalendarItem.cs" />
     <Compile Include="CompareForm.cs">
       <SubType>Form</SubType>
@@ -225,6 +226,12 @@
     <Compile Include="DifferencesForm.Designer.cs">
       <DependentUpon>DifferencesForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Enums\CalendarItemAction.cs" />
+    <Compile Include="Enums\CalendarItemChanges.cs" />
+    <Compile Include="Enums\DaysOfWeek.cs" />
+    <Compile Include="Enums\DifferencesFormResults.cs" />
+    <Compile Include="Enums\RecurrenceType.cs" />
+    <Compile Include="Enums\RetryAction.cs" />
     <Compile Include="GoogleSync.cs" />
     <Compile Include="GuidCreator.cs" />
     <Compile Include="InitialLoadForm.cs">
@@ -235,7 +242,7 @@
     </Compile>
     <Compile Include="Log.cs" />
     <Compile Include="OutlookSync.cs" />
-    <Compile Include="Precedence.cs" />
+    <Compile Include="Enums\Precedence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

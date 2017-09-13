@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
+using Outlook_Calendar_Sync.Enums;
 using System.Windows.Forms;
-using Microsoft.Office.Interop.Outlook;
-using Application = System.Windows.Forms.Application;
 
 namespace Outlook_Calendar_Sync {
     
@@ -149,6 +147,7 @@ namespace Outlook_Calendar_Sync {
                     }
                 } else
                 {
+
                     var item = googleList.Find( x => x.ID.Equals( calendarItem.ID ) );
                     item.Action |= CalendarItemAction.ContentsEqual;
 
@@ -174,42 +173,51 @@ namespace Outlook_Calendar_Sync {
                                         : CalendarItemAction.Nothing;
                             } else
                             {
-                                var result = DifferencesForm.Show( calendarItem, item );
-
-                                // Save Outlook Version Once
-                                if ( result == DialogResult.Yes )
+                                // Check to see if the only 
+                                if ( item.Changes == CalendarItemChanges.CalId &&
+                                     calendarItem.Changes == CalendarItemChanges.Nothing )
                                 {
-                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                    finalList.Add( calendarItem );
-
-                                    // Save Outlook Version for All
-                                } else if ( result == DialogResult.OK )
+                                    calendarItem.Action = CalendarItemAction.OutlookUpdate;
+                                } else
                                 {
-                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                    finalList.Add( calendarItem );
+                                    var result = (DifferencesFormResults)DifferencesForm.Show( calendarItem, item );
 
-                                    Action = CalendarItemAction.GoogleUpdate;
-                                    PerformActionToAll = true;
+                                    // Save Outlook Version Once
+                                    if ( result == DifferencesFormResults.KeepOutlookSingle )
+                                    {
+                                        calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                                        finalList.Add( calendarItem );
 
-                                    // Save Google Version Once
-                                } else if ( result == DialogResult.No )
-                                {
-                                    item.Action |= CalendarItemAction.OutlookUpdate;
-                                    finalList.Add( item );
+                                        // Save Outlook Version for All
+                                    } else if ( result == DifferencesFormResults.KeepOutlookAll )
+                                    {
+                                        calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                                        finalList.Add( calendarItem );
 
-                                    // Save Google Version for All
-                                } else if ( result == DialogResult.None )
-                                {
-                                    item.Action |= CalendarItemAction.OutlookUpdate;
-                                    finalList.Add( item );
+                                        Action = CalendarItemAction.GoogleUpdate;
+                                        PerformActionToAll = true;
 
-                                    Action = CalendarItemAction.OutlookUpdate;
-                                    PerformActionToAll = true;
+                                        // Save Google Version Once
+                                    } else if ( result == DifferencesFormResults.KeepGoogleSingle )
+                                    {
+                                        item.Action |= CalendarItemAction.OutlookUpdate;
+                                        finalList.Add( item );
 
-                                    // Ignore All
-                                } else if ( result == DialogResult.Ignore )
-                                {
-                                    PerformActionToAll = true;
+                                        // Save Google Version for All
+                                    } else if ( result == DifferencesFormResults.KeepGoogleAll )
+                                    {
+                                        item.Action |= CalendarItemAction.OutlookUpdate;
+                                        finalList.Add( item );
+
+                                        Action = CalendarItemAction.OutlookUpdate;
+                                        PerformActionToAll = true;
+
+                                        // Ignore All
+                                    } else if ( result == DifferencesFormResults.IgnoreAll )
+                                    {
+                                        PerformActionToAll = true;
+                                        Action = CalendarItemAction.Nothing;
+                                    }
                                 }
                             }
                         }
@@ -359,10 +367,13 @@ namespace Outlook_Calendar_Sync {
 
                 StatusUpdate?.Invoke( "- Sync Completed for " + pair.OutlookName + " and " + pair.GoogleName );
             }
+
             m_syncingPairs = false;
             m_archiver.Save();
+
             if ( worker.WorkerReportsProgress )
                 worker.ReportProgress( 100 );
+
             StatusUpdate?.Invoke( "- Sync has been completed." );
         }
 

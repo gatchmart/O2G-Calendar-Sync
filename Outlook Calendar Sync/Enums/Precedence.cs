@@ -1,4 +1,4 @@
-﻿namespace Outlook_Calendar_Sync {
+﻿namespace Outlook_Calendar_Sync.Enums {
 
     /// <summary>
     /// The precedence used when performing silent syncing

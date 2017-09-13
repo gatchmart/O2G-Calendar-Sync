@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Outlook;
+using Outlook_Calendar_Sync.Enums;
 using Outlook_Calendar_Sync.Properties;
 using Application = Microsoft.Office.Interop.Outlook.Application;
 using Exception = System.Exception;
@@ -18,9 +18,9 @@ namespace Outlook_Calendar_Sync {
     class OutlookSync
     {
 
-        public static OutlookSync Syncer => m_instance ?? ( m_instance = new OutlookSync() );
+        public static OutlookSync Syncer => _instance ?? ( _instance = new OutlookSync() );
 
-        private static OutlookSync m_instance;
+        private static OutlookSync _instance;
 
         public Application Application { get; set; }
 
@@ -40,16 +40,19 @@ namespace Outlook_Calendar_Sync {
         {
             try
             {
-                var newEvent = item.GetOutlookAppointment(
-                    (AppointmentItem) Application.CreateItem( OlItemType.olAppointmentItem ) );
+                
+                var newEvent = item.GetOutlookAppointment( (AppointmentItem) Application.CreateItem( OlItemType.olAppointmentItem ) );
                 newEvent.Move( m_folder );
                 newEvent.Save();
                 Archiver.Instance.Add( item.ID );
+
+                Log.Write( $"Added {item} to Outlooks Calendar {m_folder.Name}" );
 
                 Marshal.ReleaseComObject( newEvent );
 
             } catch ( Exception ex )
             {
+                Log.Write( ex );
                 MessageBox.Show( "Outlook Sync: The following error occurred: " + ex.Message );
             }
         }
@@ -60,36 +63,47 @@ namespace Outlook_Calendar_Sync {
         /// <returns>List of string names.</returns>
         public List<OutlookFolder> PullCalendars()
         {
-            if ( m_lastUpdate == DateTime.MinValue || m_lastUpdate < DateTime.Now.Subtract( TimeSpan.FromMinutes( 30 ) ) )
+            try
             {
-                var oldFolder = m_folder.EntryID;
-                SetOutlookWorkingFolder( "", true );
-
-                if ( m_folderList != null )
+                if ( m_lastUpdate == DateTime.MinValue || m_lastUpdate < DateTime.Now.Subtract( TimeSpan.FromMinutes( 30 ) ) )
                 {
-                    m_folderList.Clear();
-                    m_folderList = null;
+                    var oldFolder = m_folder.EntryID;
+                    SetOutlookWorkingFolder( "", true );
+
+                    if ( m_folderList != null )
+                    {
+                        m_folderList.Clear();
+                        m_folderList = null;
+                    }
+
+                    m_folderList = new List<OutlookFolder> { new OutlookFolder { Name = m_folder.Name, EntryID = m_folder.EntryID } };
+
+                    foreach ( Folder f in m_folder.Folders )
+                        m_folderList.Add( new OutlookFolder { Name = f.Name, EntryID = f.EntryID } );
+
+                    SetOutlookWorkingFolder( oldFolder );
+                    m_lastUpdate = DateTime.Now;
+
+                    Log.Write( "Pulled a list of Outlook Calendars" );
                 }
 
-                m_folderList = new List<OutlookFolder> { new OutlookFolder { Name = m_folder.Name, EntryID = m_folder.EntryID } };
-
-                foreach ( Folder f in m_folder.Folders )
-                    m_folderList.Add( new OutlookFolder { Name = f.Name, EntryID = f.EntryID } );
-
-                SetOutlookWorkingFolder( oldFolder );
-                m_lastUpdate = DateTime.Now;
+                return m_folderList;
+            } catch ( Exception ex )
+            {
+                Log.Write( ex );
+                MessageBox.Show( "There was an error when trying to pull a list of Calendars available in Outlook.",
+                    "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error );
             }
 
-            return m_folderList;
+            return null;
         }
 
         public List<CalendarItem> PullListOfAppointments()
         {
             var calList = new List<CalendarItem>();
-
             try
             {
-
+                Log.Write( $"Pulling a full list of appointments from Outlook calendar, {m_folder.Name}." );
                 Items item = m_folder.Items;
 
                 foreach ( var i in item )
@@ -100,9 +114,11 @@ namespace Outlook_Calendar_Sync {
                         calList.Add( cal );
                 }
 
-            } catch ( NullReferenceException )
+                Log.Write( "Completed pulling Outlook appointments." );
+
+            } catch ( NullReferenceException ex )
             {
-                Log.Write( "'folder' was null" );
+                Log.Write( ex );
             }
 
             return calList;
@@ -114,7 +130,7 @@ namespace Outlook_Calendar_Sync {
 
             try
             {
-
+                Log.Write( $"Pulling a full list of appointments from Outlook calendar, {m_folder.Name}, by date. " );
                 Items item = GetAppointmentsInRange( m_folder, startDate, endDate );
 
                 foreach ( var i in item )
@@ -124,10 +140,10 @@ namespace Outlook_Calendar_Sync {
                     if ( !calList.Exists( x => x.ID.Equals( cal.ID ) ) )
                         calList.Add( cal );
                 }
-
-            } catch ( NullReferenceException )
+                Log.Write( "Completed pulling Outlook appointments." );
+            } catch ( NullReferenceException ex )
             {
-                Log.Write( "'folder' was null" );
+                Log.Write( ex );
             }
 
             return calList;
@@ -135,17 +151,20 @@ namespace Outlook_Calendar_Sync {
 
         public CalendarItem FindEvent( string gid )
         {
-            CalendarItem c = null;
-
+            Log.Write( "Looking up an Outlook appointment using the ID" );
             foreach ( var i in m_folder.Items )
             {
                 var cal = new CalendarItem();
                 cal.LoadFromOutlookAppointment( (AppointmentItem) i );
                 if ( cal.ID.Equals( gid ) )
-                    c = cal;
+                {
+                    Log.Write( $"Found an Outlook appointment with ID, {gid}" );
+                    return cal;
+                }
             }
 
-            return c;
+            Log.Write( $"Unable to find an Outlook appointment with ID, {gid}" );
+            return null;
         }
 
         public CalendarItem FindEventByEntryId( string entryId )
@@ -153,95 +172,95 @@ namespace Outlook_Calendar_Sync {
 
             try
             {
+                Log.Write( "Looking up an Outlook appointment using the EntryId" );
                 var appt = (AppointmentItem)Application.Session.GetItemFromID( entryId, m_folder.Store.StoreID );
                 if ( appt != null )
                 {
                     var calEvent = new CalendarItem();
                     calEvent.LoadFromOutlookAppointment( appt );
+
+                    Log.Write( $"Found an Outlook appointment with EntryID, {entryId}" );
                     return calEvent;
                 }
             } catch ( COMException ex )
             {
                 Log.Write( ex );
             }
-
+            Log.Write( $"Unable to find an Outlook appointment with EntryID, {entryId}" );
             return null;
         }
 
         public void UpdateAppointment( CalendarItem ev )
         {
-
-            if ( ev.Recurrence != null && Resources.UpdateRecurrance.Equals( "true" ) )
+            try
             {
-
-                // Create the filter to find the event. This is done by either the subject and start date or the ID
-                var filter = ( ev.Action.HasFlag( CalendarItemAction.GeneratedId ) )
-                    ? ( "[Subject]='" + ev.Subject + "'" )
-                    : "[ID] = '" + ev.ID + "'";
-
-                /*
-                Items items = m_folder.Items;
-                //items.IncludeRecurrences = true;
-                items.Sort( "[Start]", Type.Missing );
-
-                Items item = items.Restrict( filter );
-                */
-
-                var appointmentItem = m_folder.Items.Find( filter );
-
-                //foreach ( AppointmentItem appointmentItem in item ) {
-                if ( ev.Recurrence != null )
+                if ( ev.Recurrence != null && Settings.Default.UpdateRecurrance )
                 {
-                    AppointmentItem i = null;
-                    if ( appointmentItem.RecurrenceState == 0 )
-                    {
-                        appointmentItem.GetRecurrencePattern();
-                        i = appointmentItem;
-                    } else
-                        i = appointmentItem.GetRecurrencePattern().GetOccurrence( DateTime.Parse( ev.Start ) );
-
-                    ev.GetOutlookAppointment( i );
-                    i.Save();
-                    //}
-
-                    ev.Action &= ~CalendarItemAction.GeneratedId;
-                    ev.Action &= ~CalendarItemAction.OutlookUpdate;
-                }
-            } else
-            {
-                // Check to see if the CalendarItem has a copy of the Outlook AppointmentItem
-                if ( ev.ContainsOutlookAppointmentItem )
-                {
-                    ev.Action &= ~CalendarItemAction.GeneratedId;
-                    ev.Action &= ~CalendarItemAction.OutlookUpdate;
-                    var i = ev.GetOutlookAppointment();
-                    i.Save();
-                } else
-                {
-                    var id = ( ev.Action.HasFlag( CalendarItemAction.GeneratedId ) )
+                    Log.Write( $"Updating recurring Outlook appointment, {ev.Subject}" );
+                    // Create the filter to find the event. This is done by either the subject and start date or the ID
+                    var filter = ( ev.Action.HasFlag( CalendarItemAction.GeneratedId ))
                         ? ( "[Subject]='" + ev.Subject + "'" )
                         : "[ID] = '" + ev.ID + "'";
 
-                    Items items = m_folder.Items;
-                    items.Sort( "[Subject]", Type.Missing );
+                    var appointmentItems = m_folder.Items.Restrict( filter );
+                    appointmentItems.IncludeRecurrences = true;
+                    appointmentItems.Sort( "[Start]", Type.Missing );
 
-                    Items item = items.Restrict( id );
-                    foreach ( AppointmentItem appointmentItem in item )
+                    foreach ( AppointmentItem appointmentItem in appointmentItems )
                     {
-                        if ( appointmentItem != null )
+                        if ( appointmentItem.RecurrenceState != OlRecurrenceState.olApptMaster )
                         {
-                            ev.Action &= ~CalendarItemAction.GeneratedId;
-                            ev.Action &= ~CalendarItemAction.OutlookUpdate;
-                            ev.GetOutlookAppointment( appointmentItem );
-                            appointmentItem.Save();
+                            var a = appointmentItem.Parent as AppointmentItem;
+                            ev.GetOutlookAppointment( a );
+                            continue;
+                        }
+
+                        ev.GetOutlookAppointment( appointmentItem );
+                        appointmentItem.Save();
+
+                        ev.Action &= ~CalendarItemAction.GeneratedId;
+                        ev.Action &= ~CalendarItemAction.OutlookUpdate;
+                    }
+
+                } else
+                {
+                    // Check to see if the CalendarItem has a copy of the Outlook AppointmentItem
+                    if ( ev.ContainsOutlookAppointmentItem )
+                    {
+                        ev.Action &= ~CalendarItemAction.GeneratedId;
+                        ev.Action &= ~CalendarItemAction.OutlookUpdate;
+                        var i = ev.GetOutlookAppointment();
+                        i.Save();
+                    } else
+                    {
+                        var id = ( ev.Action.HasFlag( CalendarItemAction.GeneratedId ) )
+                            ? ( "[Subject]='" + ev.Subject + "'" )
+                            : "[ID] = '" + ev.ID + "'";
+
+                        Items items = m_folder.Items;
+                        items.Sort( "[Subject]", Type.Missing );
+
+                        Items item = items.Restrict( id );
+                        foreach ( AppointmentItem appointmentItem in item )
+                        {
+                            if ( appointmentItem != null )
+                            {
+                                ev.Action &= ~CalendarItemAction.GeneratedId;
+                                ev.Action &= ~CalendarItemAction.OutlookUpdate;
+                                ev.GetOutlookAppointment( appointmentItem );
+                                appointmentItem.Save();
+                            }
                         }
                     }
+
                 }
 
+                if ( !Archiver.Instance.Contains( ev.ID ) )
+                    Archiver.Instance.Add( ev.ID );
+            } catch ( Exception ex )
+            {
+                Log.Write( ex );
             }
-
-            if ( !Archiver.Instance.Contains( ev.ID ) )
-                Archiver.Instance.Add( ev.ID );
 
         }
 
@@ -264,7 +283,7 @@ namespace Outlook_Calendar_Sync {
                 m_folder = Application.Session.GetFolderFromID( entryId ) as Folder;
         }
 
-    public MAPIFolder GetDefaultMapiFolder()
+        public MAPIFolder GetDefaultMapiFolder()
         {
             return Application.Session.GetDefaultFolder( OlDefaultFolders.olFolderCalendar );
         }

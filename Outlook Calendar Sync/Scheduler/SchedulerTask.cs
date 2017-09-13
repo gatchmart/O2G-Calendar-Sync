@@ -1,4 +1,5 @@
 ﻿using System;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync.Scheduler {
     [Serializable]

@@ -6,77 +6,14 @@ using System.Text;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.Office.Interop.Outlook;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync {
 
-    [Serializable]
-    public sealed class Attendee : IEquatable<Attendee> {
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public bool Required { get; set; }
-
-        public Attendee() {
-            Name = "";
-            Email = "";
-            Required = false;
-        }
-
-        public Attendee( string name = "", string email = "", bool required = false ) {
-            Name = name;
-            Email = email;
-            Required = required;
-        }
-
-        /// <summary>
-        /// Creates and Attendee
-        /// </summary>
-        /// <param name="outlookAttendee">The Outlook attendee string</param>
-        /// <param name="required">is the attendee required</param>
-        public Attendee( string outlookAttendee, bool required = false ) {
-            // Gregory Atchley-Martin ( gatchmart@gmail.com )
-            var strs = outlookAttendee.Split( '(' );
-
-            Name = strs[0].Trim();
-            Email = ( strs.Length > 1 ) ? strs[1].TrimEnd( ')' ).Trim() : "";
-            Required = required;
-        }
-
-        public bool Equals( Attendee other ) {
-            return Name.Equals( other.Name ) && Email.Equals( other.Email ) && Required == other.Required;
-        }
-    }
-
-    [Flags]
-    [Serializable]
-    public enum CalendarItemAction {
-        Nothing = 0,
-        GoogleUpdate = 1,
-        OutlookUpdate = 2,
-        GoogleAdd = 4,
-        OutlookAdd = 8,
-        GeneratedId = 16,
-        ContentsEqual = 32,
-        GoogleDelete = 64,
-        OutlookDelete = 128
-    }
-
-    [Flags]
-    [Serializable]
-    public enum CalendarItemChanges {
-        Nothing = 0,
-        StartDate = 1,
-        EndDate = 2,
-        Location = 4,
-        Body = 8,
-        Subject = 16,
-        StartTimeZone = 32,
-        EndTimeZone = 64,
-        ReminderTime = 128,
-        Attendees = 256,
-        Recurrence = 512,
-        CalId = 1024
-    }
-
+    /// <summary>
+    /// The CalendarItem class is an intermediate class between the Google Event class and the Outlook AppointmentItem interface.
+    /// This class allows you to easily convert between AppointmentItems and Events and, provides a common storage class for the data.
+    /// </summary>
     [Serializable]
     public sealed class CalendarItem : IEquatable<CalendarItem> {
         // The date time format string used to properly format the start and end dates
@@ -142,6 +79,11 @@ namespace Outlook_Calendar_Sync {
         public string iCalID { get; set; }
 
         /// <summary>
+        /// This is the EntryId from Outlook and will only be used with Outlook
+        /// </summary>
+        public string OutlookEntryId { get; set; }
+
+        /// <summary>
         /// This is the amount of time before the event to show a reminder in minutes.
         /// </summary>
         public int ReminderTime { get; set; }
@@ -156,12 +98,24 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public Recurrence Recurrence { get; set; }
 
+        /// <summary>
+        /// Is this event an all day event?
+        /// </summary>
         public bool IsAllDayEvent { get; set; }
 
-        public bool IsFirstOccurence => Recurrence != null && Recurrence.GetPatternStartTimeWithHours().Equals( Start );
+        /// <summary>
+        /// Is this instance the first appointment in a recurrance pattern?
+        /// </summary>
+        public bool IsFirstOccurence => Recurrence != null && Recurrence.PatternStart.Equals( Start );
 
+        /// <summary>
+        /// Is this instance the last appointment in a recurrance pattern?
+        /// </summary>
         public bool IsLastOccurence => Recurrence != null && Recurrence.GetPatternEndTimeWithHours().Equals( End );
 
+        /// <summary>
+        /// Does this CalendarItem class have an Outlook AppointmentItem associated with it?
+        /// </summary>
         public bool ContainsOutlookAppointmentItem => m_outlookAppointment != null;
 
         #endregion
@@ -183,6 +137,7 @@ namespace Outlook_Calendar_Sync {
             Action = CalendarItemAction.Nothing;
             Changes = CalendarItemChanges.Nothing;
             IsAllDayEvent = false;
+            OutlookEntryId = null;
         }
 
         public AppointmentItem GetOutlookAppointment() {
@@ -255,7 +210,7 @@ namespace Outlook_Calendar_Sync {
                 return item;
             } catch ( COMException ex )
             {
-                Console.WriteLine( ex );
+                Log.Write( ex );
                 MessageBox.Show(
                     "CalendarItem: There has been an error when trying to create a outlook appointment item from a CalendarItem.", "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error );
             }
@@ -300,7 +255,14 @@ namespace Outlook_Calendar_Sync {
             };
 
             if ( !string.IsNullOrEmpty( ID ) )
-                e.Id = ID;
+            {
+                e.Id = ID.ToLower();
+            }
+
+            if ( !string.IsNullOrEmpty( iCalID ) )
+            {
+                e.ICalUID = iCalID;
+            }
 
             if ( !m_isUsingDefaultReminders )
             {
@@ -332,6 +294,14 @@ namespace Outlook_Calendar_Sync {
             }
 
             e.Attendees = att;
+
+            //if ( !string.IsNullOrEmpty( OutlookEntryId ) )
+            //{
+            //    if ( e.ExtendedProperties == null )
+            //        e.ExtendedProperties = new Event.ExtendedPropertiesData();
+
+            //    e.ExtendedProperties.Private__.Add( "EntryId", OutlookEntryId );
+            //}
 
             return e;
         }
@@ -400,10 +370,11 @@ namespace Outlook_Calendar_Sync {
             StartTimeZone = TimeZoneConverter.WindowsToIana( item.StartTimeZone.ID );
             EndTimeZone = TimeZoneConverter.WindowsToIana( item.EndTimeZone.ID );
             IsAllDayEvent = item.AllDayEvent;
+            OutlookEntryId = item.EntryID;
 
             // Try to find the ID and iCalID from the UserProperties
-            var idProp = item.UserProperties.Find( "ID", true );
-            var icalProp = item.UserProperties.Find( "iCalID", true );
+            var idProp = item.UserProperties["ID"];
+            var icalProp = item.UserProperties["iCalID"];
 
             // Check to make sure they are not null and set their values
             if ( idProp != null && icalProp != null )
@@ -420,7 +391,7 @@ namespace Outlook_Calendar_Sync {
                 {
                     Action |= CalendarItemAction.OutlookUpdate;
                     Action |= CalendarItemAction.GeneratedId;
-                    ID = item.EntryID;
+                    ID = GuidCreator.Create();
 
                     UserProperties prop = item.UserProperties;
                     var p = prop.Add( "ID", OlUserPropertyType.olText );
@@ -503,7 +474,7 @@ namespace Outlook_Calendar_Sync {
                     Changes |= CalendarItemChanges.Location;
 
             if ( !string.IsNullOrEmpty( Body ) && !string.IsNullOrEmpty( other.Body ) )
-                if ( !Body.Equals( other.Body ) )
+                if ( !Body.Trim().Equals( other.Body.Trim() ) )
                     Changes |= CalendarItemChanges.Body;
 
             if ( !string.IsNullOrEmpty( StartTimeZone ) && !string.IsNullOrEmpty( other.StartTimeZone ) )
@@ -530,7 +501,7 @@ namespace Outlook_Calendar_Sync {
             } else if ( Recurrence != null || other.Recurrence != null )
                 Changes |= CalendarItemChanges.Recurrence;
 
-            if ( !iCalID.Equals( other.iCalID ) )
+            if ( !iCalID.Trim().Equals( other.iCalID?.Trim() ) )
                 Changes |= CalendarItemChanges.CalId;
 
             other.Changes = Changes;

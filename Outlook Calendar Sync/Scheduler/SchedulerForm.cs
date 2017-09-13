@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync.Scheduler
 {

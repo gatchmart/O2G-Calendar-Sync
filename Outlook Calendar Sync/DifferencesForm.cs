@@ -1,8 +1,11 @@
 ﻿using System;
-
 using System.Windows.Forms;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync {
+
+
+
     public partial class DifferencesForm : Form {
 
         public DifferencesForm() {
@@ -16,41 +19,45 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public void LoadData( CalendarItem outlook, CalendarItem google ) {
+        public void LoadData( CalendarItem outlook, CalendarItem google )
+        {
+
+            OutlookSubject_LBL.Text = outlook.Subject;
+            GoogleSubject_LBL.Text = google.Subject;
 
             //////////////////////////////////////////////////////////////////////////
             // Outlook Changes
             //////////////////////////////////////////////////////////////////////////
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.CalId ) )
-                AppendOutlook_RTBText( "iCal ID needs to be updated." );
+                AppendOutlook_RTBText( $"iCal ID needs to be updated:\n\t{outlook.iCalID}" );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.StartDate ) )
-                AppendOutlook_RTBText( "Start Date: " + DateTime.Parse( outlook.Start ).ToString( "R" ) );
+                AppendOutlook_RTBText( "Start Date:\n\t" + DateTime.Parse( outlook.Start ).ToString( "R" ) );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.EndDate ) )
-                AppendOutlook_RTBText( "End Date: " + DateTime.Parse( outlook.End ).ToString( "R" ) );
+                AppendOutlook_RTBText( "End Date:\n\t" + DateTime.Parse( outlook.End ).ToString( "R" ) );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Location ) )
-                AppendOutlook_RTBText( "Location: " + outlook.Location );
+                AppendOutlook_RTBText( "Location:\n\t" + outlook.Location );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Body ) )
-                AppendOutlook_RTBText( "Body: " + outlook.Body );
+                AppendOutlook_RTBText( "Body:\n\t" + outlook.Body );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Subject ) )
-                AppendOutlook_RTBText( "Subject: " + outlook.Subject );
+                AppendOutlook_RTBText( "Subject:\n\t" + outlook.Subject );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.StartTimeZone ) )
-                AppendOutlook_RTBText( "Start Time Zone: " + outlook.StartTimeZone );
+                AppendOutlook_RTBText( "Start Time Zone:\n\t" + outlook.StartTimeZone );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.EndTimeZone ) )
-                AppendOutlook_RTBText( "End Time Zone: " + outlook.EndTimeZone );
+                AppendOutlook_RTBText( "End Time Zone:\n\t" + outlook.EndTimeZone );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.ReminderTime ) )
-                AppendOutlook_RTBText( "Reminder Time: " + outlook.ReminderTime );
+                AppendOutlook_RTBText( "Reminder Time:\n\t" + outlook.ReminderTime );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Attendees ) )
-                AppendOutlook_RTBText( "Attendees: " + outlook.Attendees );
+                AppendOutlook_RTBText( "Attendees:\n\t" + outlook.Attendees );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Recurrence ) )
                 AppendOutlook_RTBText( "Recurrence:\n" + outlook.Recurrence );
@@ -63,34 +70,34 @@ namespace Outlook_Calendar_Sync {
             //////////////////////////////////////////////////////////////////////////
 
             if ( google.Changes.HasFlag( CalendarItemChanges.CalId ) )
-                AppendGoogle_RTBText( "iCal ID needs to be updated." );
+                AppendGoogle_RTBText( $"iCal ID needs to be updated.\n\t{google.iCalID}" );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.StartDate ) )
-                AppendGoogle_RTBText( "Start Date: " + DateTime.Parse( google.Start ).ToString( "R" ) );
+                AppendGoogle_RTBText( "Start Date:\n\t" + DateTime.Parse( google.Start ).ToString( "R" ) );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.EndDate ) )
-                AppendGoogle_RTBText( "End Date: " + DateTime.Parse( google.End ).ToString( "R" ) );
+                AppendGoogle_RTBText( "End Date:\n\t" + DateTime.Parse( google.End ).ToString( "R" ) );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Location ) )
-                AppendGoogle_RTBText( "Location: " + google.Location );
+                AppendGoogle_RTBText( "Location:\n\t" + google.Location );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Body ) )
-                AppendGoogle_RTBText( "Body: " + google.Body );
+                AppendGoogle_RTBText( "Body:\n\t" + google.Body );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Subject ) )
-                AppendGoogle_RTBText( "Subject: " + google.Subject );
+                AppendGoogle_RTBText( "Subject:\n\t" + google.Subject );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.StartTimeZone ) )
-                AppendGoogle_RTBText( "Start Time Zone: " + google.StartTimeZone );
+                AppendGoogle_RTBText( "Start Time Zone:\n\t" + google.StartTimeZone );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.EndTimeZone ) )
-                AppendGoogle_RTBText( "End Time Zone: " + google.EndTimeZone);
+                AppendGoogle_RTBText( "End Time Zone:\n\t" + google.EndTimeZone);
 
             if ( google.Changes.HasFlag( CalendarItemChanges.ReminderTime ) )
-                AppendGoogle_RTBText( "Reminder Time: " + google.ReminderTime );
+                AppendGoogle_RTBText( "Reminder Time:\n\t" + google.ReminderTime );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Attendees ) )
-                AppendGoogle_RTBText( "Attendees: " + google.Attendees );
+                AppendGoogle_RTBText( "Attendees:\n\t" + google.Attendees );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Recurrence ) )
                 AppendGoogle_RTBText( "Recurrence\n" + google.Recurrence );
@@ -100,18 +107,30 @@ namespace Outlook_Calendar_Sync {
 
         }
 
-        private void outlook_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = All_CB.Checked ? DialogResult.OK : DialogResult.Yes;
+        private void outlook_BTN_Click( object sender, EventArgs e )
+        {
+            var result = All_CB.Checked
+                ? DifferencesFormResults.KeepOutlookAll
+                : DifferencesFormResults.KeepGoogleSingle;
+            DialogResult = (DialogResult) result;
             Dispose();
         }
 
-        private void Ignore_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = All_CB.Checked ? DialogResult.Ignore : DialogResult.Cancel;
+        private void Ignore_BTN_Click( object sender, EventArgs e )
+        {
+            var result = All_CB.Checked 
+                ? DifferencesFormResults.IgnoreAll 
+                : DifferencesFormResults.IgnoreSingle;
+            DialogResult = (DialogResult) result;
             Dispose();
         }
 
-        private void Google_BTN_Click( object sender, EventArgs e ) {
-            DialogResult = All_CB.Checked ? DialogResult.None : DialogResult.No;
+        private void Google_BTN_Click( object sender, EventArgs e )
+        {
+            var result = All_CB.Checked
+                ? DifferencesFormResults.KeepGoogleAll
+                : DifferencesFormResults.KeepGoogleSingle;
+            DialogResult = (DialogResult) result;
             Dispose();
         }
 
