@@ -220,6 +220,12 @@
     <Compile Include="CompareForm.Designer.cs">
       <DependentUpon>CompareForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="DebuggingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DebuggingForm.Designer.cs">
+      <DependentUpon>DebuggingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="DifferencesForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -264,6 +270,9 @@
     <None Include="Resources\sync-gateway-icon.png" />
     <EmbeddedResource Include="CompareForm.resx">
       <DependentUpon>CompareForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DebuggingForm.resx">
+      <DependentUpon>DebuggingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="DifferencesForm.resx">
       <DependentUpon>DifferencesForm.cs</DependentUpon>

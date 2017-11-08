@@ -32,6 +32,7 @@
             this.group1 = this.Factory.CreateRibbonGroup();
             this.Sync_BTN = this.Factory.CreateRibbonButton();
             this.Scheduler_BTN = this.Factory.CreateRibbonButton();
+            this.Debug_BTN = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.SuspendLayout();
@@ -47,6 +48,7 @@
             // 
             this.group1.Items.Add(this.Sync_BTN);
             this.group1.Items.Add(this.Scheduler_BTN);
+            this.group1.Items.Add(this.Debug_BTN);
             this.group1.Label = "Cal Sync";
             this.group1.Name = "group1";
             // 
@@ -64,6 +66,12 @@
             this.Scheduler_BTN.Label = "Scheduler";
             this.Scheduler_BTN.Name = "Scheduler_BTN";
             this.Scheduler_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Settings_BTN_Click);
+            // 
+            // Debug_BTN
+            // 
+            this.Debug_BTN.Label = "Debug";
+            this.Debug_BTN.Name = "Debug_BTN";
+            this.Debug_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Debug_BTN_Click);
             // 
             // SyncRibbon
             // 
@@ -86,6 +94,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton Sync_BTN;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton Scheduler_BTN;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton Debug_BTN;
     }
 
     partial class ThisRibbonCollection {

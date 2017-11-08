@@ -28,5 +28,10 @@ namespace Outlook_Calendar_Sync {
             var settings = new SchedulerForm();
             settings.Show();
         }
+
+        private void Debug_BTN_Click( object sender, RibbonControlEventArgs e ) {
+            var debug = new DebuggingForm();
+            debug.Show();
+        }
     }
 }

@@ -14,6 +14,11 @@ namespace Outlook_Calendar_Sync {
 
         private readonly StreamWriter m_writer;
 
+#if DEBUG
+        public static EventHandler<string> RefreshStream;
+        public static string CurrentFileName;
+#endif
+
         public Log()
         {
 
@@ -22,7 +27,10 @@ namespace Outlook_Calendar_Sync {
             else
                 ClearOldLogs();
 
-            m_writer = new StreamWriter( m_logFilePath + "Log - " + DateTime.Now.ToString("yyyy-MM-dd HHmm") + ".txt", false );
+            CurrentFileName = m_logFilePath + "Log - " + DateTime.Now.ToString( "yyyy-MM-dd HHmm" ) + ".txt";
+
+            m_writer = new StreamWriter( CurrentFileName, false );
+
         }
 
         private void ClearOldLogs()
@@ -54,6 +62,7 @@ namespace Outlook_Calendar_Sync {
             {
 #if DEBUG
                 Debug.WriteLine( str );
+                RefreshStream?.Invoke( this, DateTime.Now.ToShortTimeString() + " - " + str + "\n" );
 #endif
                 m_writer.WriteLine( DateTime.Now.ToShortTimeString() + " - " + str );
                 m_writer.Flush();
@@ -72,6 +81,7 @@ namespace Outlook_Calendar_Sync {
             {
 #if DEBUG
                 Debug.WriteLine( ex );
+                RefreshStream?.Invoke( this, DateTime.Now.ToShortTimeString() + " - " + ex + "\n" );
 #endif
                 m_writer.WriteLine( DateTime.Now.ToShortTimeString() + " - " + ex );
                 m_writer.Flush();
