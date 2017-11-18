@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Outlook_Calendar_Sync.Properties;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
@@ -19,7 +20,7 @@ namespace Outlook_Calendar_Sync {
 
             var fo = Application.Session.Folders;
             foreach ( Outlook.Folder f in fo )
-            { 
+            {
                 foreach ( Outlook.Folder f2 in f.Folders )
                 {
                     if ( f2.FolderPath.Contains( "Calendar" ) )
