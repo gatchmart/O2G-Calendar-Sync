@@ -176,7 +176,11 @@ namespace Outlook_Calendar_Sync {
             InitialSyncer_BW.CancelAsync();
         }
 
-        private void Start_BTN_Click( object sender, EventArgs e ) {
+        private void Start_BTN_Click( object sender, EventArgs e )
+        {
+            // Tell the Scheduler to ingore all up coming add events during the inital load
+            Scheduler.Scheduler.Instance.IsPerformingInitialLoad = true;
+
             Syncer.Instance.StatusUpdate = SetStatus;
 
             if ( m_multiThreaded ) {
@@ -188,6 +192,8 @@ namespace Outlook_Calendar_Sync {
                 m_syncer.SynchornizePairs( pairs, InitialSyncer_BW );
             }
 
+            // Stop ignoring add events
+            Scheduler.Scheduler.Instance.IsPerformingInitialLoad = false;
             Next_BTN.Enabled = true;
         }
 

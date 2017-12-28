@@ -57,7 +57,11 @@ namespace Outlook_Calendar_Sync {
                 AppendOutlook_RTBText( "Reminder Time:\n\t" + outlook.ReminderTime );
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Attendees ) )
-                AppendOutlook_RTBText( "Attendees:\n\t" + outlook.Attendees );
+            {
+                AppendOutlook_RTBText( "Attendees:" );
+                foreach ( var outlookAttendee in outlook.Attendees )
+                    AppendOutlook_RTBText( "\n\t" + outlookAttendee );
+            }
 
             if ( outlook.Changes.HasFlag( CalendarItemChanges.Recurrence ) )
                 AppendOutlook_RTBText( "Recurrence:\n" + outlook.Recurrence );
@@ -97,7 +101,11 @@ namespace Outlook_Calendar_Sync {
                 AppendGoogle_RTBText( "Reminder Time:\n\t" + google.ReminderTime );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Attendees ) )
-                AppendGoogle_RTBText( "Attendees:\n\t" + google.Attendees );
+            {
+                AppendGoogle_RTBText( "Attendees:" );
+                foreach ( var googleAttendee in google.Attendees )
+                    AppendGoogle_RTBText("\n\t" + googleAttendee );
+            }
 
             if ( google.Changes.HasFlag( CalendarItemChanges.Recurrence ) )
                 AppendGoogle_RTBText( "Recurrence\n" + google.Recurrence );
@@ -111,7 +119,7 @@ namespace Outlook_Calendar_Sync {
         {
             var result = All_CB.Checked
                 ? DifferencesFormResults.KeepOutlookAll
-                : DifferencesFormResults.KeepGoogleSingle;
+                : DifferencesFormResults.KeepOutlookSingle;
             DialogResult = (DialogResult) result;
             Dispose();
         }

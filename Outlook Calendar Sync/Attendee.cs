@@ -37,8 +37,9 @@ namespace Outlook_Calendar_Sync
             Required = required;
         }
 
-        public bool Equals( Attendee other ) {
-            return Name.Equals( other.Name ) && Email.Equals( other.Email ) && Required == other.Required;
+        public bool Equals( Attendee other )
+        {
+            return other != null && Name.Equals( other.Name );
         }
 
         public override string ToString() {

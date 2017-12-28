@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using System.Xml.Serialization;
+using Microsoft.Office.Tools;
 
 namespace Outlook_Calendar_Sync {
 
@@ -16,7 +18,7 @@ namespace Outlook_Calendar_Sync {
 
         private static Archiver _instance;
 
-        private Dictionary<SyncPair, List<string>> m_data;
+        private SerializableDictionary<SyncPair, List<string>> m_data;
 
         public Archiver() {
             Load();
@@ -27,6 +29,7 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public void Load()
         {
+            
             if ( !Directory.Exists( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" ) )
             {
                 Directory.CreateDirectory( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
@@ -36,115 +39,44 @@ namespace Outlook_Calendar_Sync {
 
             if ( File.Exists( m_filePath ) )
             {
-                var reader = new XmlDocument();
-                reader.Load( m_filePath );
-                XmlNodeList nodes = reader.GetElementsByTagName( "Calendar" );
-                m_data = new Dictionary<SyncPair, List<string>>();
-
-                Log.Write( "Starting to load Archiver data file..." );
-
-                foreach ( XmlNode node in nodes )
+                Log.Write( "Starting loading Archiver data file..." );
+                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<string>> ) );
+                var reader = new FileStream( m_filePath, FileMode.Open );
+                if ( m_data != null )
                 {
-                    var pair = new SyncPair();
-                    var list = new List<string>();
-
-                    switch ( node.Name )
-                    {
-                        case "SyncPair":
-                            foreach ( XmlNode childNode in node.ChildNodes )
-                            {
-                                switch ( childNode.Name )
-                                {
-                                    case "GoogleName":
-                                        pair.GoogleName = childNode.InnerText;
-                                        break;
-
-                                    case "GoogleID":
-                                        pair.GoogleId = childNode.InnerText;
-                                        break;
-
-                                    case "OutlookName":
-                                        pair.OutlookName = childNode.InnerText;
-                                        break;
-
-                                    case "OutlookID":
-                                        pair.OutlookId = childNode.InnerText;
-                                        break;
-                                }
-                            }
-                            break;
-
-                        case "Events":
-                            list.AddRange( from XmlNode childNode in node.ChildNodes
-                                where childNode.Name.Equals( "ID" )
-                                select childNode.InnerText );
-
-                            break;
-                    }
-
-                    Log.Write( $"Loaded SyncPair ({pair.GoogleName}, {pair.GoogleId}, {pair.OutlookName}, {pair.OutlookId})" );
-
-                    if ( !pair.IsEmpty() )
-                        m_data.Add( pair, list );
+                    m_data.Clear();
+                    m_data = null;
                 }
 
+                m_data = (SerializableDictionary<SyncPair, List<string>>)serializer.Deserialize( reader );
+
+                reader.Close();
                 Log.Write( "Completed loading Archiver data file" );
 
-            } else
+            }
+            else
             {
                 Log.Write( "No Archiver data file found creating an empty list" );
-                m_data = new Dictionary<SyncPair, List<string>>();
+                m_data = new SerializableDictionary<SyncPair, List<string>>();
             }
 
         }
 
-        public void Save() {
-            XmlWriterSettings settings = new XmlWriterSettings
+        public void Save()
+        {
+            if ( m_data != null && m_data.Count > 0 )
             {
-                Indent = true,
-                IndentChars = "\t",
-                NewLineChars = Environment.NewLine,
-                NewLineHandling = NewLineHandling.Replace,
-                CloseOutput = true
-            };
+                Log.Write( "Writing to Archiver data file..." );
+                
+                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<string>> ) );
+                var writer = new StreamWriter( m_filePath );
+                serializer.Serialize( writer, m_data );
+                writer.Close();
 
-            XmlWriter writer = XmlWriter.Create( m_filePath, settings );
-
-            Log.Write( "Writing to Archiver data file..." );
-
-            writer.WriteStartDocument();
-            writer.WriteStartElement( "Calendars" );
-            foreach ( var entry in m_data )
-            {
-                writer.WriteStartElement( "Calendar" );
-
-                // Write SyncPair Data
-                writer.WriteStartElement( "SyncPair" );
-                writer.WriteElementString( "GoogleName", entry.Key.GoogleName );
-                writer.WriteElementString( "GoogleID", entry.Key.GoogleId );
-                writer.WriteElementString( "OutlookName", entry.Key.OutlookName );
-                writer.WriteElementString( "OutlookID", entry.Key.OutlookId );
-                writer.WriteEndElement();
-
-                // Write all event IDs for this calendar.
-                writer.WriteStartElement( "Events" );
-                foreach ( var eventId in entry.Value )
-                {
-                    writer.WriteElementString( "ID", eventId );
-                }
-                writer.WriteEndElement(); // Events
-
-                writer.WriteEndElement(); // Calendar
-
-                Log.Write( $"Wrote SyncPair ({entry.Key.GoogleName}, {entry.Key.GoogleId}, {entry.Key.OutlookName}, {entry.Key.OutlookId})" );
-
+                Log.Write( "Finished writing Archiver data file." );
             }
-            writer.WriteEndElement();
-            writer.WriteEndDocument();
-
-            writer.Close();
-
-            Log.Write( "Finished writing Archiver data file." );
+            else if ( File.Exists( m_filePath ) )
+                File.Delete( m_filePath );
         }
 
         public List<string> GetListForSyncPair( SyncPair pair )

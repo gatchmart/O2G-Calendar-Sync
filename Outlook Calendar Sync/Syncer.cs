@@ -43,14 +43,14 @@ namespace Outlook_Calendar_Sync {
         /// <summary>
         /// Do you want the sync to use a sync token
         /// </summary>
-        public bool IsUsingSyncToken { get; set; }
-
-        private bool m_syncingPairs;
-        private bool m_silentSync;
-        private Precedence m_precedence;
-        private readonly OutlookSync m_outlookSync;
-        private readonly GoogleSync m_googleSync;
-        private readonly Archiver m_archiver;
+        public bool IsUsingSyncToken { get; set; } 
+        
+        private bool m_syncingPairs;                    // Are we syncing pairs?
+        private bool m_silentSync;                      // Performing a silent sync?
+        private Precedence m_precedence;                // What is the precedence for the silent sync
+        private readonly OutlookSync m_outlookSync;     // A reference to the outlook syncer
+        private readonly GoogleSync m_googleSync;       // A reference to the google syncer
+        private readonly Archiver m_archiver;           // A reference to the archiver
 
         /// <summary>
         /// Default constructor, sets all variables to their default values
@@ -114,23 +114,27 @@ namespace Outlook_Calendar_Sync {
 
             foreach ( var calendarItem in outlookList )
             {
+                // Check to see if Item is not in google list
                 if ( !googleList.Contains( calendarItem ) )
                 {
-
+                    // It's not, check the archiver. Maybe it was deleted in google.
                     if ( m_archiver.Contains( calendarItem.ID ) )
                     {
+                        // It appears to have been deleted in the google cal.
+                        // Do you want to delete it from outlook?
                         if (
                             MessageBox.Show(
                                 "It appears the calendar event '" + calendarItem.Subject +
                                 "' was deleted from Google. Would you like to remove it from Outlook also?", "Delete Event?",
                                 MessageBoxButtons.YesNo ) == DialogResult.Yes )
                         {
-
+                            // Yes, delete it
                             calendarItem.Action |= CalendarItemAction.OutlookDelete;
                             finalList.Add( calendarItem );
                         }
+                      
                     } else
-                    {
+                    { // It is not it google's list or the archiver, add it to google
 
                         if ( calendarItem.Recurrence != null )
                         {
@@ -146,25 +150,31 @@ namespace Outlook_Calendar_Sync {
                         }
                     }
                 } else
-                {
+                { // It is in googles list. Find them differences.
 
                     var item = googleList.Find( x => x.ID.Equals( calendarItem.ID ) );
+                    // This forces the item to check for differences
                     item.Action |= CalendarItemAction.ContentsEqual;
 
+                    // Get the differences
                     if ( !item.Equals( calendarItem ) )
                     {
-
+                        // Should we do the same action to every calendar item?
                         if ( PerformActionToAll )
                         {
+                            // Check and make sure there is an action to perform
                             if ( Action != CalendarItemAction.Nothing )
                             {
                                 calendarItem.Action |= Action;
                                 finalList.Add( calendarItem );
                             }
                         } else
-                        {
+                        { // We are not performing the same action to every item, yet.
+
+                            // Are we performing a silentSync?
                             if ( m_silentSync )
                             {
+                                // Yep, setup the action to be performed
                                 PerformActionToAll = true;
                                 Action = m_precedence == Precedence.Outlook
                                     ? CalendarItemAction.GoogleUpdate
@@ -172,8 +182,9 @@ namespace Outlook_Calendar_Sync {
                                         ? CalendarItemAction.OutlookUpdate
                                         : CalendarItemAction.Nothing;
                             } else
-                            {
-                                // Check to see if the only 
+                            { // No we are not performing a silent sync
+
+                                // Check to see if the only thing that needs to updated is the calid
                                 if ( item.Changes == CalendarItemChanges.CalId &&
                                      calendarItem.Changes == CalendarItemChanges.Nothing )
                                 {
@@ -329,6 +340,7 @@ namespace Outlook_Calendar_Sync {
 
             m_silentSync = false;
             m_precedence = Precedence.None;
+            PerformActionToAll = false;
         }
 
         /// <summary>
@@ -342,8 +354,9 @@ namespace Outlook_Calendar_Sync {
 
             float count = 0;
             m_syncingPairs = true;
+
             foreach ( SyncPair pair in pairs ) {
-                StatusUpdate?.Invoke( "- Starting Sync for " + pair.OutlookName + " and " + pair.GoogleName );
+                StatusUpdate?.Invoke( $"- Starting Sync for  {pair.OutlookName} and {pair.GoogleName}" );
 
                 m_outlookSync.SetOutlookWorkingFolder( pair.OutlookId );
                 m_googleSync.SetGoogleWorkingFolder( pair.GoogleId );
@@ -352,23 +365,34 @@ namespace Outlook_Calendar_Sync {
                 var finalList = GetFinalList();
                 var progress = ++count / pairs.Count;
 
-                var compare = new CompareForm();
-                compare.SetCalendars( pair );
-                compare.LoadData( finalList );
+                if ( finalList.Count > 0 )
+                {
+                    var compare = new CompareForm();
+                    compare.SetCalendars( pair );
+                    compare.LoadData( finalList );
 
-                if ( !m_silentSync )
+                    if ( !m_silentSync )
+                    {
+                        if ( compare.ShowDialog() == DialogResult.OK )
+                            SubmitChanges( compare.Data, worker, progress );
+                    }
+                    else
+                    {
+                        SubmitChanges( finalList, worker, progress );
+                    }
+                }
+                else
                 {
-                    if ( compare.ShowDialog() == DialogResult.OK )
-                        SubmitChanges( compare.Data, worker, progress );
-                } else
-                {
-                    SubmitChanges( finalList, worker, progress );
+                    MessageBox.Show( $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.", "No Events", MessageBoxButtons.OK,
+                        MessageBoxIcon.Information );
+                    StatusUpdate?.Invoke( "The was no items to sync." );
                 }
 
-                StatusUpdate?.Invoke( "- Sync Completed for " + pair.OutlookName + " and " + pair.GoogleName );
+                StatusUpdate?.Invoke( $"- Sync Completed for {pair.OutlookName} and {pair.GoogleName}" );
             }
 
             m_syncingPairs = false;
+            PerformActionToAll = false;
             m_archiver.Save();
 
             if ( worker.WorkerReportsProgress )

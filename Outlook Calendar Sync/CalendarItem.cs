@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.Office.Interop.Outlook;
@@ -67,6 +68,16 @@ namespace Outlook_Calendar_Sync {
         /// The name of the current time zone
         /// </summary>
         public string EndTimeZone { get; set; }
+
+        /// <summary>
+        /// The start time of the event in its correct time zone. (Used when comparing events)
+        /// </summary>
+        public string StartTimeInTimeZone { get; set; }
+
+        /// <summary>
+        /// The end time of the event in its correct time zone. (Used when comparing events)
+        /// </summary>
+        public string EndTimeInTimeZone { get; set; }
 
         /// <summary>
         /// The unique Google event ID
@@ -158,6 +169,12 @@ namespace Outlook_Calendar_Sync {
                 item.Body = Body;
                 item.Subject = Subject;
                 item.AllDayEvent = IsAllDayEvent;
+
+                Microsoft.Office.Interop.Outlook.TimeZone startTz = OutlookSync.Syncer.CurrentApplication.TimeZones[TimeZoneConverter.IanaToWindows( StartTimeZone )];
+                Microsoft.Office.Interop.Outlook.TimeZone endTz = OutlookSync.Syncer.CurrentApplication.TimeZones[TimeZoneConverter.IanaToWindows( EndTimeZone )];
+
+                item.StartTimeZone = startTz;
+                item.EndTimeZone = endTz;
 
                 UserProperties prop = item.UserProperties;
                 var p = prop.Find( "ID", true );
@@ -295,13 +312,16 @@ namespace Outlook_Calendar_Sync {
 
             e.Attendees = att;
 
-            //if ( !string.IsNullOrEmpty( OutlookEntryId ) )
-            //{
-            //    if ( e.ExtendedProperties == null )
-            //        e.ExtendedProperties = new Event.ExtendedPropertiesData();
+            if ( !string.IsNullOrEmpty( OutlookEntryId ) )
+            {
+                if ( e.ExtendedProperties == null )
+                    e.ExtendedProperties = new Event.ExtendedPropertiesData();
 
-            //    e.ExtendedProperties.Private__.Add( "EntryId", OutlookEntryId );
-            //}
+                e.ExtendedProperties.Private__ = new Dictionary<string, string>
+                {
+                    { "EntryId", OutlookEntryId }
+                };
+            }
 
             return e;
         }
@@ -316,8 +336,13 @@ namespace Outlook_Calendar_Sync {
             Location = ev.Location;
             Body = ev.Description;
             Subject = ev.Summary;
-            StartTimeZone = ev.Start.TimeZone;
-            EndTimeZone = ev.End.TimeZone;
+
+            // Ensure time zone is properly setup.
+            StartTimeZone = ev.Start.TimeZone ?? TimeZoneConverter.WindowsToIana( TimeZoneInfo.Local.Id );
+            EndTimeZone = ev.End.TimeZone ?? TimeZoneConverter.WindowsToIana( TimeZoneInfo.Local.Id );
+            StartTimeInTimeZone = Start;
+            EndTimeInTimeZone = End;
+
             ID = ev.Id;
             iCalID = ev.ICalUID;
 
@@ -349,6 +374,12 @@ namespace Outlook_Calendar_Sync {
                     } );
                 }
             }
+
+            if ( ev.ExtendedProperties?.Private__ != null )
+            {
+                ev.ExtendedProperties.Private__.TryGetValue( "EntryId", out var temp );
+                OutlookEntryId = temp;
+            }
         }
 
         /// <summary>
@@ -371,6 +402,8 @@ namespace Outlook_Calendar_Sync {
             EndTimeZone = TimeZoneConverter.WindowsToIana( item.EndTimeZone.ID );
             IsAllDayEvent = item.AllDayEvent;
             OutlookEntryId = item.EntryID;
+            StartTimeInTimeZone = item.StartInStartTimeZone.ToString( DateTimeFormatString );
+            EndTimeInTimeZone = item.EndInEndTimeZone.ToString( DateTimeFormatString );
 
             // Try to find the ID and iCalID from the UserProperties
             var idProp = item.UserProperties["ID"];
@@ -420,9 +453,21 @@ namespace Outlook_Calendar_Sync {
                 {
                     var attendees = item.OptionalAttendees.Split( ';' );
                     foreach ( var attendee in attendees )
-                        Attendees.Add( new Attendee( attendee, false ) );
-                } else
-                    Attendees.Add( new Attendee( item.OptionalAttendees, false ) );
+                    {
+                        ContactItem contact = ContactItem.GetContactItem( attendee );
+                        Attendees.Add( contact != null
+                            ? new Attendee( contact.Name, contact.Email, false )
+                            : new Attendee( attendee, false ) );
+                    }
+                }
+                else
+                {
+                    ContactItem contact = ContactItem.GetContactItem( item.OptionalAttendees );
+                    Attendees.Add( contact != null
+                        ? new Attendee( contact.Name, contact.Email, true )
+                        : new Attendee( item.OptionalAttendees, true ) );
+                }
+                    
             }
 
             // Grab the required attendees.
@@ -432,9 +477,20 @@ namespace Outlook_Calendar_Sync {
                 {
                     var attendees = item.RequiredAttendees.Split( ';' );
                     foreach ( var attendee in attendees )
-                        Attendees.Add( new Attendee( attendee, true ) );
-                } else
-                    Attendees.Add( new Attendee( item.RequiredAttendees, true ) );
+                    {
+                        ContactItem contact = ContactItem.GetContactItem( attendee );
+                        Attendees.Add( contact != null
+                            ? new Attendee( contact.Name, contact.Email, true )
+                            : new Attendee( attendee, true ) );
+                    }
+                }
+                else
+                {
+                    ContactItem contact = ContactItem.GetContactItem( item.RequiredAttendees );
+                    Attendees.Add( contact != null
+                        ? new Attendee( contact.Name, contact.Email, true )
+                        : new Attendee( item.RequiredAttendees, true ) );
+                }
             }
         }
 
@@ -443,9 +499,7 @@ namespace Outlook_Calendar_Sync {
                 return ID.Equals( other.ID );
 
             Changes = CalendarItemChanges.Nothing;
-
             GetCalendarDifferences( other );
-
             return Changes == CalendarItemChanges.Nothing;
         }
 
@@ -455,10 +509,10 @@ namespace Outlook_Calendar_Sync {
         /// <param name="other">The other CalendarItem to compare</param>
         public void GetCalendarDifferences( CalendarItem other ) {
 
-            var s = DateTime.Parse( Start ).ToUniversalTime();
-            var e = DateTime.Parse( End ).ToUniversalTime();
-            var ss = DateTime.Parse( other.Start ).ToUniversalTime();
-            var ee = DateTime.Parse( other.End ).ToUniversalTime();
+            var s = DateTime.Parse( !Start.Equals( StartTimeInTimeZone ) ? StartTimeInTimeZone : Start ).ToUniversalTime();
+            var e = DateTime.Parse( !End.Equals( EndTimeInTimeZone ) ? EndTimeInTimeZone : End ).ToUniversalTime();
+            var ss = DateTime.Parse( !other.Start.Equals( other.StartTimeInTimeZone ) ? other.StartTimeInTimeZone : other.Start ).ToUniversalTime();
+            var ee = DateTime.Parse( !other.End.Equals( other.EndTimeInTimeZone ) ? other.EndTimeInTimeZone : other.End ).ToUniversalTime();
 
             if ( !s.Equals( ss ) )
                 Changes |= CalendarItemChanges.StartDate;
@@ -469,20 +523,20 @@ namespace Outlook_Calendar_Sync {
             if ( !Subject.Equals( other.Subject ) )
                 Changes |= CalendarItemChanges.Subject;
 
-            if ( !string.IsNullOrEmpty( Location ) && !string.IsNullOrEmpty( other.Location ) )
-                if ( !Location.Equals( other.Location ) )
-                    Changes |= CalendarItemChanges.Location;
+            if ( !string.IsNullOrEmpty( Location ) || !string.IsNullOrEmpty( other.Location ) )
+                if ( !IgnoreSpaceAndNewLineEquals( Location, other.Location ) )
+                    Changes |= CalendarItemChanges.Location; 
 
-            if ( !string.IsNullOrEmpty( Body ) && !string.IsNullOrEmpty( other.Body ) )
-                if ( !Body.Trim().Equals( other.Body.Trim() ) )
+            if ( !string.IsNullOrEmpty( Body ) || !string.IsNullOrEmpty( other.Body ) )
+                if ( !IgnoreSpaceAndNewLineEquals( Body, other.Body ) )
                     Changes |= CalendarItemChanges.Body;
 
-            if ( !string.IsNullOrEmpty( StartTimeZone ) && !string.IsNullOrEmpty( other.StartTimeZone ) )
-                if ( !StartTimeZone.Equals( other.StartTimeZone ) )
+            if ( !string.IsNullOrEmpty( StartTimeZone ) || !string.IsNullOrEmpty( other.StartTimeZone ) )
+                if ( !IgnoreNullEquals( StartTimeZone, other.StartTimeZone ) )
                     Changes |= CalendarItemChanges.StartTimeZone;
 
-            if ( !string.IsNullOrEmpty( EndTimeZone ) && !string.IsNullOrEmpty( other.EndTimeZone ) )
-                if ( !EndTimeZone.Equals( other.EndTimeZone ) )
+            if ( !string.IsNullOrEmpty( EndTimeZone ) || !string.IsNullOrEmpty( other.EndTimeZone ) )
+                if ( !IgnoreNullEquals( EndTimeZone, other.EndTimeZone ) )
                     Changes |= CalendarItemChanges.EndTimeZone;
 
             // TODO: Update to ignore default outlook reminder of 18 hours.
@@ -599,6 +653,31 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( "----------------" + Subject + "----------------" );
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Perform a string equals ignoring spaces and new lines
+        /// </summary>
+        /// <param name="s1"></param>
+        /// <param name="s2"></param>
+        /// <returns></returns>
+        private bool IgnoreSpaceAndNewLineEquals( string s1, string s2 )
+        {
+            if ( s1 == null || s2 == null )
+                return false;
+
+            var normS1 = Regex.Replace( s1, @"\s+", "" );
+            var normS2 = Regex.Replace( s2, @"\s+", "" );
+
+            return string.Equals( normS1, normS2, StringComparison.OrdinalIgnoreCase );
+        }
+
+        private bool IgnoreNullEquals( string s1, string s2 )
+        {
+            if ( s1 == null || s2 == null )
+                return false;
+
+            return s1.Equals( s2 );
         }
 
     }

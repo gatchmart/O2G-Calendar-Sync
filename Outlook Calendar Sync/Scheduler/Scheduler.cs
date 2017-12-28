@@ -28,6 +28,7 @@ namespace Outlook_Calendar_Sync.Scheduler
         private static Scheduler _instance;
 
         public int Count => m_tasks.Count;
+        public bool IsPerformingInitialLoad { get; set; }
 
         private readonly string TasksDataFilePath =
             Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" +
@@ -59,6 +60,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                 m_retryList = new List<RetryTask>();
 
             m_retryDeleteQueue = new Queue<int>();
+            IsPerformingInitialLoad = false;
 
             Load();
 
@@ -136,7 +138,11 @@ namespace Outlook_Calendar_Sync.Scheduler
 
         #region EventHandlers
 
-        public void Item_Add( object item ) {
+        public void Item_Add( object item )
+        {
+            if ( IsPerformingInitialLoad )
+                return;
+
             lock ( m_autoSyncEvents )
             {
                 Outlook.AppointmentItem aitem = item as Outlook.AppointmentItem;
@@ -210,8 +216,6 @@ namespace Outlook_Calendar_Sync.Scheduler
                     // Lock m_tasks so the main thread doesn't mess with it while we are looping through it.
                     lock ( m_tasks )
                     {
-
-
                         // Loop through all the tasks and perform syncs as apporiate.
                         foreach ( var schedulerTask in m_tasks )
                         {
@@ -252,11 +256,16 @@ namespace Outlook_Calendar_Sync.Scheduler
                             {
                                 if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromMinutes( 1 ) ) )
                                 {
-                                    Syncer.Instance.IsUsingSyncToken = true;
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
-                                        schedulerTask.SilentSync );
+                                    // TODO: This needs to be modified to only check for changes in events that have been modifed by Google
+                                    // since anything modified by Outlook will automatically be updated by the Scheduler.
+
+                                    // There is a problem when using sync tokens. Google will only return new, modified, or deleted events
+                                    // that happened after the sync token was created.
+                                    //Syncer.Instance.IsUsingSyncToken = true;
+                                    //Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                    //    schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
-                                    Syncer.Instance.IsUsingSyncToken = false;
+                                    //Syncer.Instance.IsUsingSyncToken = false;
                                 }
                             }
 

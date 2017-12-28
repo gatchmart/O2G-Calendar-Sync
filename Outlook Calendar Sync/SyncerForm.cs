@@ -56,14 +56,22 @@ namespace Outlook_Calendar_Sync {
 
             // Get the final list using the Syncer
             var finalList = m_syncer.GetFinalList( checkBox1.Checked, Start_DTP.Value, End_DTP.Value );
-            
 
-            // Display the differences
-            var compare = new CompareForm();
-            compare.SetParent( this );
-            compare.SetCalendars( pair );
-            compare.LoadData( finalList );
-            compare.Show( this );
+
+            if ( finalList.Count == 0 )
+            {
+                MessageBox.Show( $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.", "No Events", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information );
+            }
+            else
+            {
+                // Display the differences
+                var compare = new CompareForm();
+                compare.SetParent( this );
+                compare.SetCalendars( pair );
+                compare.LoadData( finalList );
+                compare.Show( this );
+            }
             
         }
 

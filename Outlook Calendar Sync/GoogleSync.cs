@@ -73,7 +73,10 @@ namespace Outlook_Calendar_Sync {
                 PerformAuthentication();
 
                 var e = item.GetGoogleCalendarEvent();
-                m_service.Events.Insert( e, m_currentCalendar ).Execute();
+                if ( string.IsNullOrEmpty( e.ICalUID ) )
+                    m_service.Events.Insert( e, m_currentCalendar ).Execute();
+                else
+                    m_service.Events.Import( e, m_currentCalendar ).Execute();
 
                 Log.Write( $"Added {item.Subject} Appointment to Google" );
 
@@ -278,7 +281,13 @@ namespace Outlook_Calendar_Sync {
             {
                 PerformAuthentication();
 
-                m_service.Events.Update( ev.GetGoogleCalendarEvent(), m_currentCalendar, ev.ID ).Execute();
+                // TODO: This is throwing a forbidden exception for some reason. I don't know why.
+
+                Event gEvent = ev.GetGoogleCalendarEvent();
+                if ( gEvent.Id.StartsWith( "_" ) )
+                    gEvent.Id = gEvent.Id.Remove( 0, 1 );
+
+                m_service.Events.Update( gEvent, m_currentCalendar, gEvent.Id ).Execute();
 
                 Log.Write( $"Updated Google appointment, {ev.Subject}." );
                 Retry?.Successful();
