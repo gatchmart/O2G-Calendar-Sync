@@ -108,7 +108,7 @@ namespace Outlook_Calendar_Sync {
         /// <param name="outlookList">The outlook list</param>
         /// <param name="googleList">The google list</param>
         /// <returns>A list of calendar items with the appropriate changes specified.</returns>
-        private List<CalendarItem> CompareLists(List<CalendarItem> outlookList, List<CalendarItem> googleList )
+        private List<CalendarItem> CompareLists( List<CalendarItem> outlookList, List<CalendarItem> googleList )
         {
             var finalList = new List<CalendarItem>();
 
@@ -118,7 +118,7 @@ namespace Outlook_Calendar_Sync {
                 if ( !googleList.Contains( calendarItem ) )
                 {
                     // It's not, check the archiver. Maybe it was deleted in google.
-                    if ( m_archiver.Contains( calendarItem.ID ) )
+                    if ( m_archiver.Contains( calendarItem.CalendarItemIdentifier ) )
                     {
                         // It appears to have been deleted in the google cal.
                         // Do you want to delete it from outlook?
@@ -152,7 +152,7 @@ namespace Outlook_Calendar_Sync {
                 } else
                 { // It is in googles list. Find them differences.
 
-                    var item = googleList.Find( x => x.ID.Equals( calendarItem.ID ) );
+                    var item = googleList.Find( x => x.CalendarItemIdentifier.GoogleId.Equals( calendarItem.CalendarItemIdentifier.GoogleId ) );
                     // This forces the item to check for differences
                     item.Action |= CalendarItemAction.ContentsEqual;
 
@@ -184,51 +184,47 @@ namespace Outlook_Calendar_Sync {
                             } else
                             { // No we are not performing a silent sync
 
-                                // Check to see if the only thing that needs to updated is the calid
-                                if ( item.Changes == CalendarItemChanges.CalId &&
-                                     calendarItem.Changes == CalendarItemChanges.Nothing )
+                                var result = (DifferencesFormResults)DifferencesForm.Show( calendarItem, item );
+
+                                // Save Outlook Version Once
+                                if ( result == DifferencesFormResults.KeepOutlookSingle )
                                 {
-                                    calendarItem.Action = CalendarItemAction.OutlookUpdate;
-                                } else
+                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                                    finalList.Add( calendarItem );
+
+                                    // Save Outlook Version for All
+                                }
+                                else if ( result == DifferencesFormResults.KeepOutlookAll )
                                 {
-                                    var result = (DifferencesFormResults)DifferencesForm.Show( calendarItem, item );
+                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                                    finalList.Add( calendarItem );
 
-                                    // Save Outlook Version Once
-                                    if ( result == DifferencesFormResults.KeepOutlookSingle )
-                                    {
-                                        calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                        finalList.Add( calendarItem );
+                                    Action = CalendarItemAction.GoogleUpdate;
+                                    PerformActionToAll = true;
 
-                                        // Save Outlook Version for All
-                                    } else if ( result == DifferencesFormResults.KeepOutlookAll )
-                                    {
-                                        calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                        finalList.Add( calendarItem );
+                                    // Save Google Version Once
+                                }
+                                else if ( result == DifferencesFormResults.KeepGoogleSingle )
+                                {
+                                    item.Action |= CalendarItemAction.OutlookUpdate;
+                                    finalList.Add( item );
 
-                                        Action = CalendarItemAction.GoogleUpdate;
-                                        PerformActionToAll = true;
+                                    // Save Google Version for All
+                                }
+                                else if ( result == DifferencesFormResults.KeepGoogleAll )
+                                {
+                                    item.Action |= CalendarItemAction.OutlookUpdate;
+                                    finalList.Add( item );
 
-                                        // Save Google Version Once
-                                    } else if ( result == DifferencesFormResults.KeepGoogleSingle )
-                                    {
-                                        item.Action |= CalendarItemAction.OutlookUpdate;
-                                        finalList.Add( item );
+                                    Action = CalendarItemAction.OutlookUpdate;
+                                    PerformActionToAll = true;
 
-                                        // Save Google Version for All
-                                    } else if ( result == DifferencesFormResults.KeepGoogleAll )
-                                    {
-                                        item.Action |= CalendarItemAction.OutlookUpdate;
-                                        finalList.Add( item );
-
-                                        Action = CalendarItemAction.OutlookUpdate;
-                                        PerformActionToAll = true;
-
-                                        // Ignore All
-                                    } else if ( result == DifferencesFormResults.IgnoreAll )
-                                    {
-                                        PerformActionToAll = true;
-                                        Action = CalendarItemAction.Nothing;
-                                    }
+                                    // Ignore All
+                                }
+                                else if ( result == DifferencesFormResults.IgnoreAll )
+                                {
+                                    PerformActionToAll = true;
+                                    Action = CalendarItemAction.Nothing;
                                 }
                             }
                         }
@@ -241,7 +237,7 @@ namespace Outlook_Calendar_Sync {
             {
                 if ( !outlookList.Contains( calendarItem ) )
                 {
-                    if ( m_archiver.Contains( calendarItem.ID ) )
+                    if ( m_archiver.Contains( calendarItem.CalendarItemIdentifier ) )
                     {
                         if (
                             MessageBox.Show(
@@ -406,9 +402,9 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         /// <param name="pair">The pair to search</param>
         /// <returns>A list of IDs of the deleted events</returns>
-        public List<string> FindDeletedEvents( SyncPair pair )
+        public List<Identifier> FindDeletedEvents( SyncPair pair )
         {
-            var list = new List<string>();
+            var list = new List<Identifier>();
 
             m_outlookSync.SetOutlookWorkingFolder( pair.OutlookId );
             m_archiver.CurrentPair = pair;
@@ -418,7 +414,7 @@ namespace Outlook_Calendar_Sync {
 
             foreach ( var id in archlist )
             {
-                if ( outlookAppts.Find( x => x.ID == id ) == null )
+                if ( outlookAppts.Find( x => x.CalendarItemIdentifier.Equals( id ) ) == null )
                     list.Add( id );
             }
 

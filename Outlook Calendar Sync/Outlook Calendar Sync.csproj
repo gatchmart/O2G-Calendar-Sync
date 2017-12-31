@@ -240,6 +240,7 @@
     <Compile Include="Enums\RetryAction.cs" />
     <Compile Include="GoogleSync.cs" />
     <Compile Include="GuidCreator.cs" />
+    <Compile Include="Identifier.cs" />
     <Compile Include="InitialLoadForm.cs">
       <SubType>Form</SubType>
     </Compile>

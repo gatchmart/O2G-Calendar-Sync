@@ -15,7 +15,6 @@ namespace Outlook_Calendar_Sync.Enums
         EndTimeZone = 64,
         ReminderTime = 128,
         Attendees = 256,
-        Recurrence = 512,
-        CalId = 1024
+        Recurrence = 512
     }
 }

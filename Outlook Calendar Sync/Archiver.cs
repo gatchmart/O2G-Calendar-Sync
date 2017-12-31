@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml;
 using System.Xml.Serialization;
-using Microsoft.Office.Tools;
 
 namespace Outlook_Calendar_Sync {
 
@@ -18,7 +16,7 @@ namespace Outlook_Calendar_Sync {
 
         private static Archiver _instance;
 
-        private SerializableDictionary<SyncPair, List<string>> m_data;
+        private SerializableDictionary<SyncPair, List<Identifier>> m_data;
 
         public Archiver() {
             Load();
@@ -40,7 +38,7 @@ namespace Outlook_Calendar_Sync {
             if ( File.Exists( m_filePath ) )
             {
                 Log.Write( "Starting loading Archiver data file..." );
-                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<string>> ) );
+                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<Identifier>> ) );
                 var reader = new FileStream( m_filePath, FileMode.Open );
                 if ( m_data != null )
                 {
@@ -48,7 +46,7 @@ namespace Outlook_Calendar_Sync {
                     m_data = null;
                 }
 
-                m_data = (SerializableDictionary<SyncPair, List<string>>)serializer.Deserialize( reader );
+                m_data = (SerializableDictionary<SyncPair, List<Identifier>>)serializer.Deserialize( reader );
 
                 reader.Close();
                 Log.Write( "Completed loading Archiver data file" );
@@ -57,7 +55,7 @@ namespace Outlook_Calendar_Sync {
             else
             {
                 Log.Write( "No Archiver data file found creating an empty list" );
-                m_data = new SerializableDictionary<SyncPair, List<string>>();
+                m_data = new SerializableDictionary<SyncPair, List<Identifier>>();
             }
 
         }
@@ -68,7 +66,7 @@ namespace Outlook_Calendar_Sync {
             {
                 Log.Write( "Writing to Archiver data file..." );
                 
-                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<string>> ) );
+                var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<Identifier>> ) );
                 var writer = new StreamWriter( m_filePath );
                 serializer.Serialize( writer, m_data );
                 writer.Close();
@@ -79,25 +77,50 @@ namespace Outlook_Calendar_Sync {
                 File.Delete( m_filePath );
         }
 
-        public List<string> GetListForSyncPair( SyncPair pair )
+        public List<Identifier> GetListForSyncPair( SyncPair pair )
         {
             return m_data.ContainsKey( pair ) ? m_data[pair] : null;
         }
 
-        public void Add( string id ) {
+        public void Add( Identifier id ) {
             if ( m_data.ContainsKey( CurrentPair ) )
                 m_data[CurrentPair].Add( id );
             else
-                m_data.Add( CurrentPair, new List<string> { id } );
+                m_data.Add( CurrentPair, new List<Identifier> { id } );
         }
 
-        public void Delete( string id ) {
+        public void Delete( Identifier id ) {
             if ( Contains( id ) )
                 m_data[CurrentPair].Remove( id );
         }
 
-        public bool Contains( string id ) {
+        public bool Contains( Identifier id ) {
             return m_data.ContainsKey( CurrentPair ) && m_data[CurrentPair].Contains( id );
         }
+
+        /// <summary>
+        /// Updates an Identifier
+        /// </summary>
+        /// <param name="oldId">The previous CalendarItem Identifier</param>
+        /// <param name="newId">The new CalendarItem Identifier</param>
+        /// <returns>true is the update was successful</returns>
+        public void UpdateIdentifier( Identifier oldId, Identifier newId )
+        {
+            if ( m_data.ContainsKey( CurrentPair ) )
+            {
+                if ( m_data[CurrentPair].Contains( oldId ) )
+                    m_data[CurrentPair].Remove( oldId );
+
+                m_data[CurrentPair].Add( newId );
+            }
+            else
+                m_data.Add( CurrentPair, new List<Identifier> { newId } );
+        }
+
+        public Identifier FindIdentifier( string id )
+        {
+            return m_data.SelectMany( pair => pair.Value ).FirstOrDefault( identifier => identifier.PartialCompare( id ) );
+        }
+
     }
 }

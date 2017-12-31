@@ -7,6 +7,10 @@ using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync {
 
+    /// <summary>
+    /// This class is a middle class for the Google and Outlook recurrance patterns. It can convert between the two and is
+    /// used through the add-in as the recurrance storage class.
+    /// </summary>
     [Serializable]
     public class Recurrence {
 
@@ -63,14 +67,14 @@ namespace Outlook_Calendar_Sync {
         public int Occurrences { get; set; }
 
         /// <summary>
-        /// The end DateTime for the event
+        /// The end time for the event
         /// </summary>
-        public string End { get; set; }
+        public string EndTime { get; set; }
 
         /// <summary>
-        /// The start DateTime for the event
+        /// The start time for the event
         /// </summary>
-        public string Start { get; set; }
+        public string StartTime { get; set; }
 
         /// <summary>
         /// Returns or sets an Integer (int in C#) value indicating which month of the year is valid for the specified recurrence pattern.
@@ -84,12 +88,12 @@ namespace Outlook_Calendar_Sync {
         /// <summary>
         /// The pattern start DateTime
         /// </summary>
-        public string PatternStart { get; set; }
+        public string PatternStartDate { get; set; }
 
         /// <summary>
         /// The pattern end DateTime
         /// </summary>
-        public string PatternEnd { get; set; }
+        public string PatternEndDate { get; set; }
 
         /// <summary>
         /// Returns a Boolean (bool in C#) value that indicates True if the recurrence pattern has no end date.
@@ -104,15 +108,15 @@ namespace Outlook_Calendar_Sync {
             DayOfMonth = 0;
             DaysOfTheWeekMask = 0;
             Duration = 0;
-            End = "";
-            Start = "";
+            EndTime = "";
+            StartTime = "";
             Instance = 0;
             Interval = 0;
             MonthOfYear = 0;
             NoEndDate = false;
             Occurrences = 0;
-            PatternStart = "";
-            PatternEnd = "";
+            PatternStartDate = "";
+            PatternEndDate = "";
             Type = 0;
         }
 
@@ -147,7 +151,8 @@ namespace Outlook_Calendar_Sync {
                             var date = ( calItem.IsAllDayEvent && split[1].Length == 8 )
                                 ? DateTime.ParseExact( split[1], "yyyyMMdd", CultureInfo.InvariantCulture )
                                 : DateTime.ParseExact( split[1], "yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture );
-                            PatternEnd = date.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
+                            PatternEndDate = date.ToString( "yyyy-MM-dd" );
+                            EndTime = date.ToString( "HH:mm:sszzz" );
                             break;
 
                         case "BYDAY":
@@ -216,7 +221,16 @@ namespace Outlook_Calendar_Sync {
                     MonthOfYear = date.Month;
                 }
 
-                PatternStart = calItem.Start;
+                var startDate = ( calItem.IsAllDayEvent && calItem.Start.Length == 10 )
+                    ? DateTime.ParseExact( calItem.Start, "yyyy-MM-dd", CultureInfo.InvariantCulture )
+                    : DateTime.ParseExact( calItem.Start, "yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture );
+                PatternStartDate = startDate.ToString( "yyyy-MM-dd" );
+                StartTime = startDate.ToString( "HH:mm:sszzz" );
+
+                // If there is no specified end date set NoEndDate to true
+                if ( string.IsNullOrEmpty( PatternEndDate ) )
+                    NoEndDate = true;
+
             } catch ( Exception ex ) {
                 Log.Write( "An Error occured when trying to parse Google Recurrence data, " + ex.Message );
             }
@@ -230,15 +244,15 @@ namespace Outlook_Calendar_Sync {
             DayOfMonth = pattern.DayOfMonth;
             DaysOfTheWeekMask = (DaysOfWeek)pattern.DayOfWeekMask;
             Duration = pattern.Duration;
-            End = pattern.EndTime.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
-            Start = pattern.StartTime.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
+            EndTime = pattern.EndTime.ToString( "HH:mm:sszzz" );
+            StartTime = pattern.StartTime.ToString( "HH:mm:sszzz" );
             Instance = pattern.Instance;
             Interval = pattern.Interval;
             MonthOfYear = pattern.MonthOfYear;
             NoEndDate = pattern.NoEndDate;
             Occurrences = pattern.Occurrences;
-            PatternStart = pattern.PatternStartDate.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
-            PatternEnd = pattern.PatternEndDate.ToString( "yyyy-MM-ddTHH:mm:sszzz" );
+            PatternStartDate = pattern.PatternStartDate.ToString( "yyyy-MM-dd" );
+            PatternEndDate = pattern.PatternEndDate.ToString( "yyyy-MM-dd" );
             Type = (RecurrenceType)pattern.RecurrenceType;
         }
 
@@ -319,9 +333,9 @@ namespace Outlook_Calendar_Sync {
                     break;
             }
 
-            if ( PatternEnd != null ) {
+            if ( PatternEndDate != null && !NoEndDate ) {
                 builder.Append( "UNTIL=" );
-                var date = DateTime.ParseExact( PatternEnd, "yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture );
+                var date = DateTime.ParseExact( $"{PatternEndDate}T{EndTime}", "yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture );
                 builder.Append( date.ToUniversalTime().ToString( "yyyyMMddTHHmmssZ" ) + ";" );
             }
 
@@ -361,45 +375,45 @@ namespace Outlook_Calendar_Sync {
                 builder.Append( MonthOfYear + ";" );
             }
 
-            if ( Interval > 1 )
+            if ( Interval > 1 && Type != RecurrenceType.Yearly )
                 builder.Append( "INTERVAL=" + Interval + ";" );
-
 
             builder.Remove( builder.Length - 1, 1 );
             return builder.ToString();
         }
 
         public string GetPatternStartTimeWithHours() {
-            return PatternStart.Substring( 0, 10 ) + Start.Substring( 10 );
+            return PatternStartDate + "T" + StartTime;
         }
 
-        public string GetPatternEndTimeWithHours() {
-            return PatternEnd.Substring( 0, 10 ) + End.Substring( 10 );
+        public string GetPatternEndTimeWithHours()
+        {
+            return PatternEndDate + "T" + EndTime;
         }
 
         public void AdjustRecurrenceOutlookPattern( DateTime start, DateTime end ) {
             var s = start.ToString( "HH:mm:sszzz" );
             var e = end.ToString( "HH:mm:sszzz" );
 
-            PatternStart = PatternStart.Remove( PatternStart.IndexOf( "T" ) );
-            PatternStart += "T" + s;
+            PatternStartDate = PatternStartDate.Remove( PatternStartDate.IndexOf( "T" ) );
+            PatternStartDate += "T" + s;
 
-            PatternEnd = PatternEnd.Remove( PatternEnd.IndexOf( "T" ) );
-            PatternEnd += "T" + e;
+            PatternEndDate = PatternEndDate.Remove( PatternEndDate.IndexOf( "T" ) );
+            PatternEndDate += "T" + e;
 
         }
 
         public override string ToString() {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendLine( "\t\tPattern Start: " + PatternStart );
-            builder.AppendLine( "\t\tPattern End: " + PatternEnd );
+            builder.AppendLine( "\t\tPattern Start Date: " + PatternStartDate );
+            builder.AppendLine( "\t\tPattern End Date: " + PatternEndDate );
             builder.AppendLine( "\t\tDuration: " + Duration );
             builder.AppendLine( "\t\tOccurrences: " + Occurrences );
             builder.AppendLine( "\t\tInterval: " + Interval );
             builder.AppendLine( "\t\tInstance: " + Instance );
-            builder.AppendLine( "\t\tStart: " + Start );
-            builder.AppendLine( "\t\tEnd: " + End );
+            builder.AppendLine( "\t\tStart Time: " + StartTime );
+            builder.AppendLine( "\t\tEnd Time: " + EndTime );
             builder.AppendLine( "\t\tMonth of Year: " + MonthOfYear );
             builder.AppendLine( "\t\tDay of Month: " + DayOfMonth );
             builder.AppendLine( "\t\tNo End Date: " + ( NoEndDate ? "Yes" : "No" ) );
@@ -452,17 +466,17 @@ namespace Outlook_Calendar_Sync {
             result &= MonthOfYear == other.MonthOfYear;
             result &= NoEndDate && other.NoEndDate;
 
-            if ( !string.IsNullOrEmpty( End ) && !string.IsNullOrEmpty( other.End ) )
-                result &= End.Equals( other.End );
+            if ( !string.IsNullOrEmpty( EndTime ) && !string.IsNullOrEmpty( other.EndTime ) )
+                result &= EndTime.Equals( other.EndTime );
 
-            if ( !string.IsNullOrEmpty( Start ) && !string.IsNullOrEmpty( other.Start ) )
-                result &= Start.Equals( other.Start );
+            if ( !string.IsNullOrEmpty( StartTime ) && !string.IsNullOrEmpty( other.StartTime ) )
+                result &= StartTime.Equals( other.StartTime );
 
-            if ( !string.IsNullOrEmpty( PatternEnd ) && !string.IsNullOrEmpty( other.PatternEnd ) )
-                result &= PatternEnd.Equals( other.PatternEnd );
+            if ( !string.IsNullOrEmpty( PatternEndDate ) && !string.IsNullOrEmpty( other.PatternEndDate ) )
+                result &= PatternEndDate.Equals( other.PatternEndDate );
 
-            if ( !string.IsNullOrEmpty( PatternStart ) && !string.IsNullOrEmpty( other.PatternStart ) )
-                result &= PatternStart.Equals( other.PatternStart );
+            if ( !string.IsNullOrEmpty( PatternStartDate ) && !string.IsNullOrEmpty( other.PatternStartDate ) )
+                result &= PatternStartDate.Equals( other.PatternStartDate );
 
             return result;
         }
@@ -470,11 +484,11 @@ namespace Outlook_Calendar_Sync {
         private void AddOutlookRecurrenceData( ref RecurrencePattern pattern ) {
             pattern.Duration = Duration;
 
-            if ( End != null )
-                pattern.EndTime = DateTime.Parse( End );
+            if ( EndTime != null )
+                pattern.EndTime = DateTime.Parse( EndTime );
 
-            if ( Start != null )
-                pattern.StartTime = DateTime.Parse( Start );
+            if ( StartTime != null )
+                pattern.StartTime = DateTime.Parse( StartTime );
 
             if ( Interval != 0 )
                 pattern.Interval = Interval;
@@ -484,11 +498,11 @@ namespace Outlook_Calendar_Sync {
             if ( Occurrences != 0 )
                 pattern.Occurrences = Occurrences;
 
-            if ( PatternStart != null )
-                pattern.PatternStartDate = DateTime.Parse( PatternStart );
+            if ( PatternStartDate != null )
+                pattern.PatternStartDate = DateTime.Parse( PatternStartDate );
 
-            if ( PatternEnd != null )
-                pattern.PatternEndDate = DateTime.Parse( PatternEnd );
+            if ( PatternEndDate != null && !NoEndDate )
+                pattern.PatternEndDate = DateTime.Parse( PatternEndDate );
         }
 
     }

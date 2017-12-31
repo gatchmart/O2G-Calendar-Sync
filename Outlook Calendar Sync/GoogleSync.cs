@@ -72,15 +72,18 @@ namespace Outlook_Calendar_Sync {
             {
                 PerformAuthentication();
 
-                var e = item.GetGoogleCalendarEvent();
-                if ( string.IsNullOrEmpty( e.ICalUID ) )
-                    m_service.Events.Insert( e, m_currentCalendar ).Execute();
+                Event newEvent;
+                if ( string.IsNullOrEmpty( item.CalendarItemIdentifier.GoogleICalUId ) )
+                    newEvent = m_service.Events.Insert( item.GetGoogleCalendarEvent(), m_currentCalendar ).Execute();
                 else
-                    m_service.Events.Import( e, m_currentCalendar ).Execute();
+                    newEvent = m_service.Events.Import( item.GetGoogleCalendarEvent(), m_currentCalendar ).Execute();
 
                 Log.Write( $"Added {item.Subject} Appointment to Google" );
 
-                Archiver.Instance.Add( e.Id );
+                var oldId = item.CalendarItemIdentifier;
+                item.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookStoreId );
+
+                Archiver.Instance.UpdateIdentifier( oldId, item.CalendarItemIdentifier );
 
                 Retry?.Successful();
             } catch ( GoogleApiException ex )
@@ -176,7 +179,7 @@ namespace Outlook_Calendar_Sync {
                     {
                         var cal = new CalendarItem();
                         cal.LoadFromGoogleEvent( @event );
-                        if ( !items.Exists( x => x.ID.Equals( cal.ID ) ) )
+                        if ( !items.Exists( x => x.CalendarItemIdentifier.GoogleId.Equals( cal.CalendarItemIdentifier.GoogleId ) ) )
                             items.Add( cal );
                     }
 
@@ -281,13 +284,16 @@ namespace Outlook_Calendar_Sync {
             {
                 PerformAuthentication();
 
-                // TODO: This is throwing a forbidden exception for some reason. I don't know why.
-
                 Event gEvent = ev.GetGoogleCalendarEvent();
                 if ( gEvent.Id.StartsWith( "_" ) )
                     gEvent.Id = gEvent.Id.Remove( 0, 1 );
 
-                m_service.Events.Update( gEvent, m_currentCalendar, gEvent.Id ).Execute();
+                var newEvent = m_service.Events.Update( gEvent, m_currentCalendar, gEvent.Id ).Execute();
+
+                var oldId = ev.CalendarItemIdentifier;
+                ev.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookStoreId );
+
+                Archiver.Instance.UpdateIdentifier( oldId, ev.CalendarItemIdentifier );
 
                 Log.Write( $"Updated Google appointment, {ev.Subject}." );
                 Retry?.Successful();
@@ -313,7 +319,7 @@ namespace Outlook_Calendar_Sync {
                     string pageToken = null;
                     do
                     {
-                        var instancesRequest = m_service.Events.Instances( m_currentCalendar, ev.ID );
+                        var instancesRequest = m_service.Events.Instances( m_currentCalendar, ev.CalendarItemIdentifier.GoogleId );
                         instancesRequest.PageToken = pageToken;
 
                         var events = instancesRequest.Execute();
@@ -328,11 +334,11 @@ namespace Outlook_Calendar_Sync {
                     } while ( pageToken != null );
                 } else
                 {
-                    m_service.Events.Delete( m_currentCalendar, ev.ID ).Execute();
+                    m_service.Events.Delete( m_currentCalendar, ev.CalendarItemIdentifier.GoogleId ).Execute();
                     Log.Write( $"Deleted Google appointment {ev.Subject}." );
                 }
 
-                Archiver.Instance.Delete( ev.ID );
+                Archiver.Instance.Delete( ev.CalendarItemIdentifier );
             } catch ( GoogleApiException ex )
             {
                 Log.Write( ex );
@@ -344,19 +350,19 @@ namespace Outlook_Calendar_Sync {
         /// Deletes an appointment using just the ID
         /// </summary>
         /// <param name="id">The ID of the appointment</param>
-        public void DeleteAppointment( string id ) {
+        public void DeleteAppointment( Identifier id ) {
             try
             {
                 PerformAuthentication();
 
-                m_service.Events.Delete( m_currentCalendar, id ).Execute();
+                m_service.Events.Delete( m_currentCalendar, id.GoogleId ).Execute();
                 Log.Write( $"Deleted Google appointment with ID, {id}." );
 
                 Archiver.Instance.Delete( id );
             } catch ( GoogleApiException ex )
             {
                 Log.Write( ex );
-                HandleException( ex, "There was an error when trying to delete an event from google.", new CalendarItem{ ID = id }, RetryAction.DeleteById );
+                HandleException( ex, "There was an error when trying to delete an event from google.", new CalendarItem{ CalendarItemIdentifier = id }, RetryAction.DeleteById );
             }
         }
 
@@ -467,7 +473,7 @@ namespace Outlook_Calendar_Sync {
                 {
                     var cal = new CalendarItem();
                     cal.LoadFromGoogleEvent( @event );
-                    if ( !items.Exists( x => x.ID.Equals( cal.ID ) ) )
+                    if ( !items.Exists( x => x.CalendarItemIdentifier.GoogleId.Equals( cal.CalendarItemIdentifier.GoogleId ) ) )
                         items.Add( cal );
                 }
 
@@ -494,7 +500,7 @@ namespace Outlook_Calendar_Sync {
             } else if ( ex.HttpStatusCode == HttpStatusCode.Conflict )
             {
                 if ( item != null )
-                    item.ID = GuidCreator.Create();
+                    item.CalendarItemIdentifier.GoogleId = GuidCreator.Create();
 
                 CreateRetry( item, action );
             } else if ( ex.HttpStatusCode == HttpStatusCode.Forbidden )

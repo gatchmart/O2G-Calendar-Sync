@@ -261,11 +261,11 @@ namespace Outlook_Calendar_Sync.Scheduler
 
                                     // There is a problem when using sync tokens. Google will only return new, modified, or deleted events
                                     // that happened after the sync token was created.
-                                    //Syncer.Instance.IsUsingSyncToken = true;
-                                    //Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
-                                    //    schedulerTask.SilentSync );
+                                    Syncer.Instance.IsUsingSyncToken = true;
+                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
+                                        schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
-                                    //Syncer.Instance.IsUsingSyncToken = false;
+                                    Syncer.Instance.IsUsingSyncToken = false;
                                 }
                             }
 
@@ -375,7 +375,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                                         GoogleSync.Syncer.Retry = retry;
                                         GoogleSync.Syncer.SetGoogleWorkingFolder( retry.Calendar );
 
-                                        GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem.ID );
+                                        GoogleSync.Syncer.DeleteAppointment( retry.CalendarItem );
 
                                         GoogleSync.Syncer.Retry = null;
                                         GoogleSync.Syncer.ResetGoogleWorkingFolder();

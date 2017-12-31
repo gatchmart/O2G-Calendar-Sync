@@ -29,9 +29,6 @@ namespace Outlook_Calendar_Sync {
             // Outlook Changes
             //////////////////////////////////////////////////////////////////////////
 
-            if ( outlook.Changes.HasFlag( CalendarItemChanges.CalId ) )
-                AppendOutlook_RTBText( $"iCal ID needs to be updated:\n\t{outlook.iCalID}" );
-
             if ( outlook.Changes.HasFlag( CalendarItemChanges.StartDate ) )
                 AppendOutlook_RTBText( "Start Date:\n\t" + DateTime.Parse( outlook.Start ).ToString( "R" ) );
 
@@ -72,9 +69,6 @@ namespace Outlook_Calendar_Sync {
             //////////////////////////////////////////////////////////////////////////
             // Google Changes
             //////////////////////////////////////////////////////////////////////////
-
-            if ( google.Changes.HasFlag( CalendarItemChanges.CalId ) )
-                AppendGoogle_RTBText( $"iCal ID needs to be updated.\n\t{google.iCalID}" );
 
             if ( google.Changes.HasFlag( CalendarItemChanges.StartDate ) )
                 AppendGoogle_RTBText( "Start Date:\n\t" + DateTime.Parse( google.Start ).ToString( "R" ) );

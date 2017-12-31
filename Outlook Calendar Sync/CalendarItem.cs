@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -80,21 +81,6 @@ namespace Outlook_Calendar_Sync {
         public string EndTimeInTimeZone { get; set; }
 
         /// <summary>
-        /// The unique Google event ID
-        /// </summary>
-        public string ID { get; set; }
-
-        /// <summary>
-        /// This ID is used for recurring events in Google. It will allow you to delete events.
-        /// </summary>
-        public string iCalID { get; set; }
-
-        /// <summary>
-        /// This is the EntryId from Outlook and will only be used with Outlook
-        /// </summary>
-        public string OutlookEntryId { get; set; }
-
-        /// <summary>
         /// This is the amount of time before the event to show a reminder in minutes.
         /// </summary>
         public int ReminderTime { get; set; }
@@ -109,6 +95,8 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public Recurrence Recurrence { get; set; }
 
+        public Identifier CalendarItemIdentifier { get; set; }
+
         /// <summary>
         /// Is this event an all day event?
         /// </summary>
@@ -117,7 +105,7 @@ namespace Outlook_Calendar_Sync {
         /// <summary>
         /// Is this instance the first appointment in a recurrance pattern?
         /// </summary>
-        public bool IsFirstOccurence => Recurrence != null && Recurrence.PatternStart.Equals( Start );
+        public bool IsFirstOccurence => Recurrence != null && Recurrence.GetPatternStartTimeWithHours().Equals( Start );
 
         /// <summary>
         /// Is this instance the last appointment in a recurrance pattern?
@@ -135,6 +123,8 @@ namespace Outlook_Calendar_Sync {
 
         private bool m_isUsingDefaultReminders;
 
+        private string m_source;
+
         public CalendarItem() {
             Start = "";
             End = "";
@@ -148,7 +138,7 @@ namespace Outlook_Calendar_Sync {
             Action = CalendarItemAction.Nothing;
             Changes = CalendarItemChanges.Nothing;
             IsAllDayEvent = false;
-            OutlookEntryId = null;
+            CalendarItemIdentifier = new Identifier();
         }
 
         public AppointmentItem GetOutlookAppointment() {
@@ -175,21 +165,6 @@ namespace Outlook_Calendar_Sync {
 
                 item.StartTimeZone = startTz;
                 item.EndTimeZone = endTz;
-
-                UserProperties prop = item.UserProperties;
-                var p = prop.Find( "ID", true );
-                var d = prop.Find( "iCalID", true );
-
-                // Check to see if we found either user property, if not add it
-                if ( p == null )
-                    p = prop.Add( "ID", OlUserPropertyType.olText );
-
-                if ( d == null )
-                    d = prop.Add( "iCalID", OlUserPropertyType.olText );
-
-                // Finally set the UserProperty values
-                p.Value = ID;
-                d.Value = iCalID;
 
                 if ( !m_isUsingDefaultReminders )
                 {
@@ -271,14 +246,14 @@ namespace Outlook_Calendar_Sync {
                 Location = Location
             };
 
-            if ( !string.IsNullOrEmpty( ID ) )
+            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.GoogleId ) )
             {
-                e.Id = ID.ToLower();
+                e.Id = CalendarItemIdentifier.GoogleId.ToLower();
             }
 
-            if ( !string.IsNullOrEmpty( iCalID ) )
+            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.GoogleICalUId ) )
             {
-                e.ICalUID = iCalID;
+                e.ICalUID = CalendarItemIdentifier.GoogleICalUId;
             }
 
             if ( !m_isUsingDefaultReminders )
@@ -312,17 +287,6 @@ namespace Outlook_Calendar_Sync {
 
             e.Attendees = att;
 
-            if ( !string.IsNullOrEmpty( OutlookEntryId ) )
-            {
-                if ( e.ExtendedProperties == null )
-                    e.ExtendedProperties = new Event.ExtendedPropertiesData();
-
-                e.ExtendedProperties.Private__ = new Dictionary<string, string>
-                {
-                    { "EntryId", OutlookEntryId }
-                };
-            }
-
             return e;
         }
 
@@ -330,7 +294,9 @@ namespace Outlook_Calendar_Sync {
         /// Fills this CalendarItem with the data from a Google Event object
         /// </summary>
         /// <param name="ev">The Google Event to use</param>
-        public void LoadFromGoogleEvent( Event ev ) {
+        public void LoadFromGoogleEvent( Event ev )
+        {
+            m_source = "Google";
             Start = ev.Start.DateTimeRaw ?? ev.Start.Date;
             End = ev.End.DateTimeRaw ?? ev.End.Date;
             Location = ev.Location;
@@ -343,8 +309,14 @@ namespace Outlook_Calendar_Sync {
             StartTimeInTimeZone = Start;
             EndTimeInTimeZone = End;
 
-            ID = ev.Id;
-            iCalID = ev.ICalUID;
+            var id = Archiver.Instance.FindIdentifier( ev.Id );
+            if ( id == null )
+                CalendarItemIdentifier.GoogleId = ev.Id;
+            else
+                CalendarItemIdentifier = id;
+
+            if ( string.IsNullOrEmpty( CalendarItemIdentifier.GoogleICalUId ) )
+                CalendarItemIdentifier.GoogleICalUId = ev.ICalUID;
 
             IsAllDayEvent = ( ev.Start.DateTimeRaw == null && ev.End.DateTimeRaw == null );
 
@@ -374,12 +346,6 @@ namespace Outlook_Calendar_Sync {
                     } );
                 }
             }
-
-            if ( ev.ExtendedProperties?.Private__ != null )
-            {
-                ev.ExtendedProperties.Private__.TryGetValue( "EntryId", out var temp );
-                OutlookEntryId = temp;
-            }
         }
 
         /// <summary>
@@ -388,8 +354,7 @@ namespace Outlook_Calendar_Sync {
         /// <param name="item">The Outlook AppointmentItem to use</param>
         /// <param name="createID">Specify if you need to create and ID.</param>
         public void LoadFromOutlookAppointment( AppointmentItem item, bool createID = true ) {
-            // Store a copy of the Outlook Appointment
-            m_outlookAppointment = item;
+            m_source = "Outlook";
 
             Start = item.Start.ToString( DateTimeFormatString );
             End = item.End.ToString( DateTimeFormatString );
@@ -401,40 +366,20 @@ namespace Outlook_Calendar_Sync {
             StartTimeZone = TimeZoneConverter.WindowsToIana( item.StartTimeZone.ID );
             EndTimeZone = TimeZoneConverter.WindowsToIana( item.EndTimeZone.ID );
             IsAllDayEvent = item.AllDayEvent;
-            OutlookEntryId = item.EntryID;
             StartTimeInTimeZone = item.StartInStartTimeZone.ToString( DateTimeFormatString );
             EndTimeInTimeZone = item.EndInEndTimeZone.ToString( DateTimeFormatString );
 
-            // Try to find the ID and iCalID from the UserProperties
-            var idProp = item.UserProperties["ID"];
-            var icalProp = item.UserProperties["iCalID"];
+            var id = Archiver.Instance.FindIdentifier( item.EntryID );
+            if ( id == null )
+                CalendarItemIdentifier.OutlookEntryId = item.EntryID;
+            else
+                CalendarItemIdentifier = id;
 
-            // Check to make sure they are not null and set their values
-            if ( idProp != null && icalProp != null )
+            if ( string.IsNullOrEmpty( CalendarItemIdentifier.GoogleId ) )
             {
-                ID = idProp.Value;
-                iCalID = icalProp.Value;
-            } else if ( idProp != null )
-            {
-                ID = idProp.Value;
-            } else
-            {
-                // If both UserProperties are null create an ID
                 if ( createID )
                 {
-                    Action |= CalendarItemAction.OutlookUpdate;
-                    Action |= CalendarItemAction.GeneratedId;
-                    ID = GuidCreator.Create();
-
-                    UserProperties prop = item.UserProperties;
-                    var p = prop.Add( "ID", OlUserPropertyType.olText );
-                    var d = prop.Add( "iCalID", OlUserPropertyType.olText );
-
-                    // Finally set the UserProperty values
-                    p.Value = ID;
-                    d.Value = iCalID;
-
-                    item.Save();
+                    CalendarItemIdentifier.GoogleId = GuidCreator.Create();
                 }
             }
 
@@ -443,7 +388,7 @@ namespace Outlook_Calendar_Sync {
             {
                 var recure = item.GetRecurrencePattern();
                 Recurrence = new Recurrence( recure );
-                Recurrence.AdjustRecurrenceOutlookPattern( item.Start, item.End );
+                //Recurrence.AdjustRecurrenceOutlookPattern( item.Start, item.End );
             }
 
             // Add attendees
@@ -494,13 +439,29 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
-        public bool Equals( CalendarItem other ) {
-            if ( !Action.HasFlag( CalendarItemAction.ContentsEqual ) && !string.IsNullOrEmpty( ID ) && !string.IsNullOrEmpty( other.ID ) )
-                return ID.Equals( other.ID );
+        public bool Equals( CalendarItem other )
+        {
+            if ( other == null )
+                return false;
 
-            Changes = CalendarItemChanges.Nothing;
-            GetCalendarDifferences( other );
-            return Changes == CalendarItemChanges.Nothing;
+            var idEqual = false;
+
+            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.GoogleId ) &&
+                 !string.IsNullOrEmpty( other.CalendarItemIdentifier.GoogleId ) )
+                idEqual = CalendarItemIdentifier.GoogleId.Equals( other.CalendarItemIdentifier.GoogleId );
+
+            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.OutlookEntryId ) &&
+                 !string.IsNullOrEmpty( other.CalendarItemIdentifier.OutlookEntryId ) )
+                idEqual |= CalendarItemIdentifier.OutlookEntryId.Equals( other.CalendarItemIdentifier.OutlookEntryId );
+
+            if ( Action.HasFlag( CalendarItemAction.ContentsEqual ) )
+            {
+                Changes = CalendarItemChanges.Nothing;
+                GetCalendarDifferences( other );
+                return Changes == CalendarItemChanges.Nothing;
+            }
+
+            return idEqual;
         }
 
         /// <summary>
@@ -555,9 +516,6 @@ namespace Outlook_Calendar_Sync {
             } else if ( Recurrence != null || other.Recurrence != null )
                 Changes |= CalendarItemChanges.Recurrence;
 
-            if ( !iCalID.Trim().Equals( other.iCalID?.Trim() ) )
-                Changes |= CalendarItemChanges.CalId;
-
             other.Changes = Changes;
         }
 
@@ -570,8 +528,7 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( "\tEnd Time Zone: " + EndTimeZone );
             builder.AppendLine( "\tLocation: " + Location );
             builder.AppendLine( "\tBody: " + Body );
-            builder.AppendLine( "\tID: " + ID );
-            builder.AppendLine( "\tiCalID: " + iCalID );
+            builder.AppendLine( CalendarItemIdentifier.ToString() );
             builder.AppendLine( "\tReminder Time: " + ReminderTime );
             builder.AppendLine( "\tUsing Default Reminder: " + ( m_isUsingDefaultReminders ? "Yes" : "No" ) );
 
