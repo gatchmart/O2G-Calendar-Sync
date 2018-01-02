@@ -14,4 +14,4 @@ If you have any issues running the plugin please create an issue for me to troub
 recreate the issue. If you have the call stack paste a copy of it in the issue as well.
 
 
-Icons made by [Smashicons](https://www.flaticon.com/authors/smashicons) from [www.flaticon.com](https://www.flaticon.com/) is licensed by [CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).
+Icons made by [Smashicons](https://www.flaticon.com/authors/smashicons) and [Google](https://www.flaticon.com/authors/google) from [www.flaticon.com](https://www.flaticon.com/) is licensed by [CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).
