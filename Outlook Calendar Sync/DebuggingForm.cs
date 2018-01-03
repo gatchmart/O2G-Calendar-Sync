@@ -7,7 +7,7 @@ namespace Outlook_Calendar_Sync
 {
     public partial class DebuggingForm : Form
     {
-
+#if DEBUG
         private readonly string m_basePath = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
                                              "\\OutlookGoogleSync\\";
 
@@ -83,5 +83,6 @@ namespace Outlook_Calendar_Sync
         private void Compare_CB_CheckedChanged( object sender, EventArgs e ) {
             Compare_SC.Panel2Collapsed = !Compare_CB.Checked;
         }
+#endif
     }
 }

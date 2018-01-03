@@ -30,6 +30,8 @@ namespace Outlook_Calendar_Sync.Scheduler
         public int Count => m_tasks.Count;
         public bool IsPerformingInitialLoad { get; set; }
 
+        public bool PerformingSync { get; set; }
+
         private readonly string TasksDataFilePath =
             Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" +
             "schedulerTasks.xml";
@@ -61,6 +63,7 @@ namespace Outlook_Calendar_Sync.Scheduler
 
             m_retryDeleteQueue = new Queue<int>();
             IsPerformingInitialLoad = false;
+            PerformingSync = false;
 
             Load();
 
@@ -140,7 +143,7 @@ namespace Outlook_Calendar_Sync.Scheduler
 
         public void Item_Add( object item )
         {
-            if ( IsPerformingInitialLoad )
+            if ( IsPerformingInitialLoad || PerformingSync )
                 return;
 
             lock ( m_autoSyncEvents )
@@ -174,20 +177,34 @@ namespace Outlook_Calendar_Sync.Scheduler
                 Outlook.AppointmentItem aitem = item as Outlook.AppointmentItem;
                 if ( aitem != null )
                 {
-                    Outlook.MAPIFolder calender = aitem.Parent as Outlook.MAPIFolder;
-                    if ( calender != null )
+                    if ( !PerformingSync )
                     {
-                        var tasks = m_tasks.FindAll( x => x.Event == SchedulerEvent.Automatically &&
-                                                          x.Pair.OutlookId.Equals( calender.EntryID ) );
-
-                        foreach ( var schedulerTask in tasks )
+                        Outlook.MAPIFolder calender = aitem.Parent as Outlook.MAPIFolder;
+                        if ( calender != null )
                         {
-                            m_autoSyncEvents.Add( new AutoSyncEvent
+                            var tasks = m_tasks.FindAll( x => x.Event == SchedulerEvent.Automatically &&
+                                                              x.Pair.OutlookId.Equals( calender.EntryID ) );
+
+                            foreach ( var schedulerTask in tasks )
                             {
-                                Action = CalendarItemAction.GoogleUpdate,
-                                EntryId = aitem.EntryID,
-                                Pair = schedulerTask.Pair
-                            } );
+                                m_autoSyncEvents.Add( new AutoSyncEvent
+                                {
+                                    Action = CalendarItemAction.GoogleUpdate,
+                                    EntryId = aitem.EntryID,
+                                    Pair = schedulerTask.Pair
+                                } );
+                            }
+                        } 
+                    }
+
+                    var id = Archiver.Instance.FindIdentifier( aitem.EntryID ) ?? Archiver.Instance.FindIdentifier( aitem.GlobalAppointmentID );
+                    if ( id != null )
+                    {
+                        if ( !aitem.EntryID.Equals( id.OutlookEntryId ) || !aitem.GlobalAppointmentID.Equals( id.OutlookGlobalId ) )
+                        {
+                            var newId = new Identifier( id.GoogleId, id.GoogleICalUId, aitem.EntryID,
+                                aitem.GlobalAppointmentID );
+                            Archiver.Instance.UpdateIdentifier( id, newId );
                         }
                     }
                 }
@@ -195,6 +212,9 @@ namespace Outlook_Calendar_Sync.Scheduler
         }
 
         public void Item_Remove() {
+            if ( PerformingSync )
+                return;
+
             lock ( m_autoSyncEvents )
             {
                 var ase = new AutoSyncEvent { Action = CalendarItemAction.GoogleDelete };
@@ -256,9 +276,6 @@ namespace Outlook_Calendar_Sync.Scheduler
                             {
                                 if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromMinutes( 1 ) ) )
                                 {
-                                    // TODO: This needs to be modified to only check for changes in events that have been modifed by Google
-                                    // since anything modified by Outlook will automatically be updated by the Scheduler.
-
                                     // There is a problem when using sync tokens. Google will only return new, modified, or deleted events
                                     // that happened after the sync token was created.
                                     Syncer.Instance.IsUsingSyncToken = true;
@@ -410,7 +427,7 @@ namespace Outlook_Calendar_Sync.Scheduler
             }
         }
 
-        public void AboutThread()
+        public void AbortThread()
         {
             if ( m_thread.IsAlive )
             {

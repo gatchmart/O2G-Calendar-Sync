@@ -7,3 +7,5 @@ Outlook Calendar Sync/[Oo]bj/*
 client_secret.json
 .vs/Outlook Calendar Sync/v15/.suo
 /Outlook Calendar Sync/bin/Debug
+/Outlook Calendar Sync/bin/Release
+/Outlook Calendar Sync/publish

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Outlook_Calendar_Sync.Properties;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
@@ -9,7 +8,8 @@ namespace Outlook_Calendar_Sync {
 
         private Syncer m_syncer;
         private Scheduler.Scheduler m_scheduler;
-        private List<Outlook.Items> m_items = new List<Outlook.Items>();
+        private List<Outlook.Items> m_items;
+        private List<Outlook.Folder> m_folders;
 
         private void ThisAddIn_Startup( object sender, System.EventArgs e ) {
             OutlookSync.Syncer.Init( Application );
@@ -18,36 +18,11 @@ namespace Outlook_Calendar_Sync {
             m_syncer = Syncer.Instance;
             m_scheduler = Scheduler.Scheduler.Instance;
 
-            foreach ( Outlook.MAPIFolder folder in Application.Session.Folders )
+            m_items = new List<Outlook.Items>();
+            m_folders = new List<Outlook.Folder>();
+
+            foreach ( Outlook.Folder folder in Application.Session.Folders )
                 GetFolders( folder );
-
-            //var fo = Application.Session.Folders;
-            //foreach ( Outlook.Folder f in fo )
-            //{
-            //    foreach ( Outlook.Folder f2 in f.Folders )
-            //    {
-            //        if ( f2.FolderPath.Contains( "Calendar" ) )
-            //        {
-            //            Log.Write( f2.FolderPath );
-            //            var items = f2.Items;
-            //            m_items.Add( items );
-            //            items.ItemChange += Outlook_ItemChange;
-            //            items.ItemAdd += Outlook_ItemAdd;
-            //            items.ItemRemove += Outlook_ItemRemove;
-
-            //            foreach ( Outlook.Folder f2Folder in f2.Folders )
-            //            {
-            //                Log.Write( f2Folder.FolderPath );
-            //                var items2 = f2Folder.Items;
-            //                m_items.Add( items2 );
-            //                items2.ItemChange += Outlook_ItemChange;
-            //                items2.ItemAdd += Outlook_ItemAdd;
-            //                items2.ItemRemove += Outlook_ItemRemove;
-            //            }
-            //        }
-            //    }
-            //}
-
         }
 
         private void Outlook_ItemAdd( object item )
@@ -67,9 +42,18 @@ namespace Outlook_Calendar_Sync {
 
         private void ThisAddIn_Quit()
         {
-            m_scheduler.AboutThread();
+            m_scheduler.AbortThread();
             m_scheduler.Save( false );
             Archiver.Instance.Save();
+
+            foreach ( var mapiFolder in m_folders )
+                Marshal.ReleaseComObject( mapiFolder );
+
+            foreach ( var item in m_items )
+                Marshal.ReleaseComObject( item );
+
+            m_folders.Clear();
+            m_items.Clear();
         }
 
         private void ThisAddIn_Shutdown( object sender, System.EventArgs e ) {
@@ -77,16 +61,18 @@ namespace Outlook_Calendar_Sync {
             //    must run when Outlook shuts down, see http://go.microsoft.com/fwlink/?LinkId=506785
         }
 
-        private void GetFolders( Outlook.MAPIFolder folder )
+        private void GetFolders( Outlook.Folder folder )
         {
-            foreach ( Outlook.MAPIFolder child in folder.Folders )
+            foreach ( Outlook.Folder child in folder.Folders )
             {
                 if ( child.DefaultItemType == Outlook.OlItemType.olAppointmentItem )
                 {
-                    m_items.Add( child.Items );
-                    child.Items.ItemChange += Outlook_ItemChange;
-                    child.Items.ItemAdd += Outlook_ItemAdd;
-                    child.Items.ItemRemove += Outlook_ItemRemove;
+                    var items = child.Items;
+                    m_folders.Add( child );
+                    m_items.Add( items );
+                    items.ItemChange += Outlook_ItemChange;
+                    items.ItemAdd += Outlook_ItemAdd;
+                    items.ItemRemove += Outlook_ItemRemove;
 
                     Log.Write( $"Added EventHandlers for the {child.Name} folder." );
 
@@ -108,5 +94,6 @@ namespace Outlook_Calendar_Sync {
         }
 
         #endregion
+
     }
 }

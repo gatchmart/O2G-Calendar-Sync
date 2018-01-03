@@ -8,14 +8,14 @@ namespace Outlook_Calendar_Sync
         public string GoogleId { get; set; }
         public string GoogleICalUId { get; set; }
         public string OutlookEntryId { get; set; }
-        public string OutlookStoreId { get; set; }
+        public string OutlookGlobalId { get; set; }
 
         public Identifier()
         {
             GoogleId = "";
             GoogleICalUId = "";
             OutlookEntryId = "";
-            OutlookStoreId = "";
+            OutlookGlobalId = "";
         }
 
         public Identifier( string gid, string guid, string oeid, string osid )
@@ -23,7 +23,7 @@ namespace Outlook_Calendar_Sync
             GoogleId = gid;
             GoogleICalUId = guid;
             OutlookEntryId = oeid;
-            OutlookStoreId = osid;
+            OutlookGlobalId = osid;
         }
 
         public override string ToString()
@@ -34,14 +34,15 @@ namespace Outlook_Calendar_Sync
         
         public bool PartialCompare( string id )
         {
-            return GoogleId.Equals( id ) || GoogleICalUId.Equals( id ) || OutlookEntryId.Equals( id );
+            return GoogleId.Equals( id ) || GoogleICalUId.Equals( id ) || OutlookEntryId.Equals( id ) ||
+                   OutlookGlobalId.Equals( id );
         }
 
         public bool Equals( Identifier other )
         {
             if ( ReferenceEquals( null, other ) ) return false;
             if ( ReferenceEquals( this, other ) ) return true;
-            return string.Equals( GoogleId, other.GoogleId ) && string.Equals( GoogleICalUId, other.GoogleICalUId ) && string.Equals( OutlookEntryId, other.OutlookEntryId ) && string.Equals( OutlookStoreId, other.OutlookStoreId );
+            return string.Equals( GoogleId, other.GoogleId ) && string.Equals( GoogleICalUId, other.GoogleICalUId ) && string.Equals( OutlookEntryId, other.OutlookEntryId ) && string.Equals( OutlookGlobalId, other.OutlookGlobalId );
         }
 
         public override bool Equals( object obj )
@@ -59,7 +60,7 @@ namespace Outlook_Calendar_Sync
                 var hashCode = ( GoogleId != null ? GoogleId.GetHashCode() : 0 );
                 hashCode = ( hashCode * 397 ) ^ ( GoogleICalUId != null ? GoogleICalUId.GetHashCode() : 0 );
                 hashCode = ( hashCode * 397 ) ^ ( OutlookEntryId != null ? OutlookEntryId.GetHashCode() : 0 );
-                hashCode = ( hashCode * 397 ) ^ ( OutlookStoreId != null ? OutlookStoreId.GetHashCode() : 0 );
+                hashCode = ( hashCode * 397 ) ^ ( OutlookGlobalId != null ? OutlookGlobalId.GetHashCode() : 0 );
                 return hashCode;
             }
         }

@@ -231,6 +231,9 @@ namespace Outlook_Calendar_Sync {
                 if ( string.IsNullOrEmpty( PatternEndDate ) )
                     NoEndDate = true;
 
+                if ( string.IsNullOrEmpty( EndTime ) && !calItem.IsAllDayEvent && calItem.End.Length > 10 )
+                    EndTime = calItem.End.Substring( 11 );
+
             } catch ( Exception ex ) {
                 Log.Write( "An Error occured when trying to parse Google Recurrence data, " + ex.Message );
             }

@@ -81,7 +81,7 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Image = global::Outlook_Calendar_Sync.Properties.Resources.sync_gateway_icon;
+            this.pictureBox1.Image = global::Outlook_Calendar_Sync.Properties.Resources.synchronization_arrows;
             this.pictureBox1.Location = new System.Drawing.Point(456, 9);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(96, 96);

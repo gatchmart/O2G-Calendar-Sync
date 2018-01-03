@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -6,6 +7,7 @@ using System.Xml.Serialization;
 namespace Outlook_Calendar_Sync
 {
     [XmlRoot("Dictionary")]
+    [Serializable]
     public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IXmlSerializable
     {
         public XmlSchema GetSchema()

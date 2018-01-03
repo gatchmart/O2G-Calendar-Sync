@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Outlook_Calendar_Sync.Enums;
 using System.Windows.Forms;
+using Microsoft.Office.Interop.Outlook;
 
 namespace Outlook_Calendar_Sync {
     
@@ -83,12 +85,31 @@ namespace Outlook_Calendar_Sync {
             {
                 outlookList = m_outlookSync.PullListOfAppointmentsByDate( start, end );
                 googleList = m_googleSync.PullListOfAppointmentsByDate( start, end );
-            } else 
+            } else if ( IsUsingSyncToken )
+            {
+                googleList = m_googleSync.PullListOfAppointmentsBySyncToken();
+                outlookList = new List<CalendarItem>();
+                foreach ( var calendarItem in googleList )
+                {
+                    // Skip items that are not tracked yet. They'll need to get added to Outlook.
+                    if ( string.IsNullOrEmpty( calendarItem.CalendarItemIdentifier.OutlookEntryId ) )
+                        continue;
+
+                    if ( OutlookSync.Syncer.CurrentApplication.Session.GetItemFromID(
+                        calendarItem.CalendarItemIdentifier.OutlookEntryId ) is AppointmentItem appt )
+                    {
+                        var calItem = new CalendarItem();
+                        calItem.LoadFromOutlookAppointment( appt );
+                        outlookList.Add( calItem );
+
+                        Marshal.ReleaseComObject( appt );
+                    }
+                }
+            }
+            else
             {
                 outlookList = m_outlookSync.PullListOfAppointments();
-                googleList = IsUsingSyncToken
-                    ? m_googleSync.PullListOfAppointmentsBySyncToken()
-                        : m_googleSync.PullListOfAppointments();
+                googleList = m_googleSync.PullListOfAppointments();
             }
 
             // Check to see what events need to be added to google from outlook
@@ -172,15 +193,13 @@ namespace Outlook_Calendar_Sync {
                         { // We are not performing the same action to every item, yet.
 
                             // Are we performing a silentSync?
-                            if ( m_silentSync )
+                            if ( m_silentSync && m_precedence != Precedence.None )
                             {
                                 // Yep, setup the action to be performed
                                 PerformActionToAll = true;
                                 Action = m_precedence == Precedence.Outlook
                                     ? CalendarItemAction.GoogleUpdate
-                                    : m_precedence == Precedence.Google
-                                        ? CalendarItemAction.OutlookUpdate
-                                        : CalendarItemAction.Nothing;
+                                    : CalendarItemAction.OutlookUpdate;
                             } else
                             { // No we are not performing a silent sync
 
@@ -268,6 +287,7 @@ namespace Outlook_Calendar_Sync {
         /// <param name="pairProgress">The completed progress when submitting changes to multiple pairs</param>
         public void SubmitChanges( List<CalendarItem> items, BackgroundWorker worker, float pairProgress = 1 )
         {
+            Scheduler.Scheduler.Instance.PerformingSync = true;
             int currentCount = 0;
 
             foreach ( var calendarItem in items )
@@ -319,6 +339,8 @@ namespace Outlook_Calendar_Sync {
                     worker.ReportProgress( 100 );
                 StatusUpdate?.Invoke( "- Sync has been completed." );
             }
+
+            Scheduler.Scheduler.Instance.PerformingSync = false;
         }
 
         /// <summary>
@@ -379,8 +401,12 @@ namespace Outlook_Calendar_Sync {
                 }
                 else
                 {
-                    MessageBox.Show( $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.", "No Events", MessageBoxButtons.OK,
-                        MessageBoxIcon.Information );
+                    if ( !m_silentSync )
+                        MessageBox.Show(
+                            $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.",
+                            "No Events", MessageBoxButtons.OK,
+                            MessageBoxIcon.Information );
+
                     StatusUpdate?.Invoke( "The was no items to sync." );
                 }
 

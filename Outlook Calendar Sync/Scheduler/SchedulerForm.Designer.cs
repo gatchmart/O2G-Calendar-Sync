@@ -128,6 +128,7 @@
             this.Precedence_CB.Enabled = false;
             this.Precedence_CB.FormattingEnabled = true;
             this.Precedence_CB.Items.AddRange(new object[] {
+            "None",
             "Outlook",
             "Google"});
             this.Precedence_CB.Location = new System.Drawing.Point(391, 111);

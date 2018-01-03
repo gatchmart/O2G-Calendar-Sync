@@ -23,7 +23,7 @@ namespace Outlook_Calendar_Sync {
     /// <summary>
     /// The Google Syncer is the connection between the application and the Google Calendar API. This is a Singleton class so you need to use GoogleSync.Syncer to access it.
     /// </summary>
-    public class GoogleSync : IDisposable {
+    public sealed class GoogleSync : IDisposable {
 
         /// <summary>
         /// The Singleton instance of GoogleSync
@@ -81,7 +81,7 @@ namespace Outlook_Calendar_Sync {
                 Log.Write( $"Added {item.Subject} Appointment to Google" );
 
                 var oldId = item.CalendarItemIdentifier;
-                item.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookStoreId );
+                item.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId );
 
                 Archiver.Instance.UpdateIdentifier( oldId, item.CalendarItemIdentifier );
 
@@ -177,6 +177,9 @@ namespace Outlook_Calendar_Sync {
 
                     foreach ( var @event in i )
                     {
+                        if ( @event.Status.Equals( "cancelled" ) )
+                            continue;
+
                         var cal = new CalendarItem();
                         cal.LoadFromGoogleEvent( @event );
                         if ( !items.Exists( x => x.CalendarItemIdentifier.GoogleId.Equals( cal.CalendarItemIdentifier.GoogleId ) ) )
@@ -291,7 +294,7 @@ namespace Outlook_Calendar_Sync {
                 var newEvent = m_service.Events.Update( gEvent, m_currentCalendar, gEvent.Id ).Execute();
 
                 var oldId = ev.CalendarItemIdentifier;
-                ev.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookStoreId );
+                ev.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId );
 
                 Archiver.Instance.UpdateIdentifier( oldId, ev.CalendarItemIdentifier );
 
@@ -471,6 +474,9 @@ namespace Outlook_Calendar_Sync {
 
                 foreach ( var @event in i )
                 {
+                    if ( @event.Status.Equals( "cancelled" ) )
+                        continue;
+
                     var cal = new CalendarItem();
                     cal.LoadFromGoogleEvent( @event );
                     if ( !items.Exists( x => x.CalendarItemIdentifier.GoogleId.Equals( cal.CalendarItemIdentifier.GoogleId ) ) )

@@ -14,9 +14,10 @@ namespace Outlook_Calendar_Sync {
 
         private readonly StreamWriter m_writer;
 
+        public static string CurrentFileName;
+
 #if DEBUG
         public static EventHandler<string> RefreshStream;
-        public static string CurrentFileName;
 #endif
 
         public Log()

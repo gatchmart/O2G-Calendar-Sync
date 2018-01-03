@@ -49,7 +49,7 @@ namespace Outlook_Calendar_Sync {
 
                 // Update the old Identifier
                 var oldId = item.CalendarItemIdentifier;
-                item.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newEvent.EntryID, m_folder.StoreID );
+                item.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newEvent.EntryID, newEvent.GlobalAppointmentID );
                 Archiver.Instance.UpdateIdentifier( oldId, item.CalendarItemIdentifier );
 
                 Log.Write( $"Added {item} to Outlooks Calendar {m_folder.Name}" );
@@ -116,16 +116,16 @@ namespace Outlook_Calendar_Sync {
                 Log.Write( $"Pulling a full list of appointments from Outlook calendar, {m_folder.Name}." );
                 Items item = m_folder.Items;
 
-                foreach ( var i in item )
+                foreach ( AppointmentItem i in item )
                 {
                     var cal = new CalendarItem();
-                    cal.LoadFromOutlookAppointment( (AppointmentItem) i );
+                    cal.LoadFromOutlookAppointment( i );
                     if ( !calList.Exists( x => x.CalendarItemIdentifier.OutlookEntryId.Equals( cal.CalendarItemIdentifier.OutlookEntryId ) ) )
                         calList.Add( cal );
                 }
 
                 Log.Write( "Completed pulling Outlook appointments." );
-
+                Marshal.ReleaseComObject( item );
             } catch ( NullReferenceException ex )
             {
                 Log.Write( ex );
@@ -143,13 +143,15 @@ namespace Outlook_Calendar_Sync {
                 Log.Write( $"Pulling a full list of appointments from Outlook calendar, {m_folder.Name}, by date. " );
                 Items item = GetAppointmentsInRange( m_folder, startDate, endDate );
 
-                foreach ( var i in item )
+                foreach ( AppointmentItem i in item )
                 {
                     var cal = new CalendarItem();
-                    cal.LoadFromOutlookAppointment( (AppointmentItem) i );
+                    cal.LoadFromOutlookAppointment( i );
                     if ( !calList.Exists( x => x.CalendarItemIdentifier.OutlookEntryId.Equals( cal.CalendarItemIdentifier.OutlookEntryId ) ) )
                         calList.Add( cal );
                 }
+
+                Marshal.ReleaseComObject( item );
                 Log.Write( "Completed pulling Outlook appointments." );
             } catch ( NullReferenceException ex )
             {
@@ -189,6 +191,7 @@ namespace Outlook_Calendar_Sync {
                     calEvent.LoadFromOutlookAppointment( appt );
 
                     Log.Write( $"Found an Outlook appointment with EntryID, {entryId}" );
+                    Marshal.ReleaseComObject( appt );
                     return calEvent;
                 }
             } catch ( COMException ex )
@@ -215,22 +218,23 @@ namespace Outlook_Calendar_Sync {
                         {
                             if ( item.RecurrenceState == OlRecurrenceState.olApptMaster )
                             {
-                                AppointmentItem master = ev.GetOutlookAppointment(
+                                AppointmentItem temp = ev.GetOutlookAppointment(
                                     CurrentApplication.CreateItem( OlItemType.olAppointmentItem ) );
-                                master.Move( m_folder );
+                                var newMaster = temp.Move( m_folder );
 
                                 item.Delete();
-                                master.Save();
+                                newMaster.Save();
 
-                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, master.EntryID, m_folder.StoreID );
+                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newMaster.EntryID, newMaster.GlobalAppointmentID );
 
-                                Marshal.ReleaseComObject( master );
+                                Marshal.ReleaseComObject( temp );
+                                Marshal.ReleaseComObject( newMaster );
                             } else if ( item.RecurrenceState == OlRecurrenceState.olApptNotRecurring )
                             {
                                 ev.GetOutlookAppointment( item );
                                 item.Save();
 
-                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, m_folder.StoreID );
+                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID );
                             }
 
                             Marshal.ReleaseComObject( item );
@@ -250,7 +254,7 @@ namespace Outlook_Calendar_Sync {
                             ev.GetOutlookAppointment( item );
                             item.Save();
 
-                            ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, m_folder.StoreID );
+                            ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID );
 
                             Marshal.ReleaseComObject( item );
                         }
@@ -316,7 +320,9 @@ namespace Outlook_Calendar_Sync {
                 calItems.IncludeRecurrences = true;
                 calItems.Sort( "[Start]", Type.Missing );
                 Items restrictItems = calItems.Restrict( filter );
-                if ( restrictItems.Count > 0 ) {
+                Marshal.ReleaseComObject( calItems );
+                if ( restrictItems.Count > 0 )
+                {
                     return restrictItems;
                 } else {
                     return null;

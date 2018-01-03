@@ -23,6 +23,9 @@ namespace Outlook_Calendar_Sync {
             InitializeComponent();
             m_syncer = Syncer.Instance;
             m_multiThreaded = Settings.Default.MultiThreaded;
+#if DEBUG
+            button1.Visable = true;
+#endif
         }
 
         public void StartUpdate( List<CalendarItem> list ) {
@@ -97,7 +100,7 @@ namespace Outlook_Calendar_Sync {
             End_DTP.Enabled = checkBox1.Checked;
         }
 
-        #region BackgroundWorker Methods
+#region BackgroundWorker Methods
 
         private void calendarUpdate_WORKER_DoWork( object sender, System.ComponentModel.DoWorkEventArgs e ) {
             List<CalendarItem> list = (List<CalendarItem>)e.Argument;
@@ -123,7 +126,7 @@ namespace Outlook_Calendar_Sync {
                 progressBar1.Value = progress;
             }
         }
-        #endregion BackgroundWorker Methods
+#endregion BackgroundWorker Methods
 
         private void button1_Click( object sender, EventArgs e ) {
             var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";

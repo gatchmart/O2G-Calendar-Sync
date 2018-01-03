@@ -21,7 +21,7 @@ namespace Outlook_Calendar_Sync {
         // The date time format string used to properly format the start and end dates
         internal const string DateTimeFormatString = "yyyy-MM-ddTHH:mm:sszzz";
 
-        internal const int DEFAULT_REMINDER_TIME = 15;
+        internal const int DEFAULT_REMINDER_TIME = 30;
 
         #region Properties
 
@@ -112,14 +112,7 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public bool IsLastOccurence => Recurrence != null && Recurrence.GetPatternEndTimeWithHours().Equals( End );
 
-        /// <summary>
-        /// Does this CalendarItem class have an Outlook AppointmentItem associated with it?
-        /// </summary>
-        public bool ContainsOutlookAppointmentItem => m_outlookAppointment != null;
-
         #endregion
-
-        private AppointmentItem m_outlookAppointment;
 
         private bool m_isUsingDefaultReminders;
 
@@ -139,10 +132,6 @@ namespace Outlook_Calendar_Sync {
             Changes = CalendarItemChanges.Nothing;
             IsAllDayEvent = false;
             CalendarItemIdentifier = new Identifier();
-        }
-
-        public AppointmentItem GetOutlookAppointment() {
-            return GetOutlookAppointment( m_outlookAppointment );
         }
 
         /// <summary>
@@ -264,7 +253,7 @@ namespace Outlook_Calendar_Sync {
                 e.Reminders.UseDefault = false;
                 e.Reminders.Overrides = new List<EventReminder> {
                     new EventReminder {
-                        Method = "email",
+                        Method = "popup",
                         Minutes = ReminderTime
                     }
                 };
@@ -368,10 +357,33 @@ namespace Outlook_Calendar_Sync {
             IsAllDayEvent = item.AllDayEvent;
             StartTimeInTimeZone = item.StartInStartTimeZone.ToString( DateTimeFormatString );
             EndTimeInTimeZone = item.EndInEndTimeZone.ToString( DateTimeFormatString );
+            
+            string entryId = null;
+            string globalId = null;
+            bool useParent = false;
 
-            var id = Archiver.Instance.FindIdentifier( item.EntryID );
+            // This ensures that if we grab a occurence of a recurring appointment we use the proper global ID.
+            // You must use the MasterAppointment's global ID since that is what I track.
+            if ( item.IsRecurring )
+            {
+                if ( item.RecurrenceState != OlRecurrenceState.olApptMaster )
+                {
+                    if ( item.Parent is AppointmentItem parent )
+                    {
+                        entryId = parent.EntryID;
+                        globalId = parent.GlobalAppointmentID;
+                        useParent = true;
+                    }
+                }
+            }
+
+            // Outlook is fucking stupid and changes the GlobalAppointmentID everytime it restarts but doesn't change the EntryID so use one or the other.
+            var id = Archiver.Instance.FindIdentifier( useParent ? entryId : item.EntryID ) ?? Archiver.Instance.FindIdentifier( useParent ? globalId : item.GlobalAppointmentID );
             if ( id == null )
-                CalendarItemIdentifier.OutlookEntryId = item.EntryID;
+            {
+                CalendarItemIdentifier.OutlookEntryId = useParent ? entryId : item.EntryID;
+                CalendarItemIdentifier.OutlookGlobalId = useParent ? globalId : item.GlobalAppointmentID;
+            }
             else
                 CalendarItemIdentifier = id;
 
@@ -500,10 +512,10 @@ namespace Outlook_Calendar_Sync {
                 if ( !IgnoreNullEquals( EndTimeZone, other.EndTimeZone ) )
                     Changes |= CalendarItemChanges.EndTimeZone;
 
-            // TODO: Update to ignore default outlook reminder of 18 hours.
             if ( ReminderTime >= 0 && other.ReminderTime >= 0 )
-                if ( ReminderTime != other.ReminderTime )
-                    Changes |= CalendarItemChanges.ReminderTime;
+                if ( ReminderTime != 1080 || other.ReminderTime != 1080 )
+                    if ( ReminderTime != other.ReminderTime )
+                        Changes |= CalendarItemChanges.ReminderTime;
 
             if ( Attendees.Count > 0 && other.Attendees.Count > 0 )
                 if ( !Attendees.All( other.Attendees.Contains ) )

@@ -41,7 +41,7 @@
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
-            this.tab1.Label = "Cal Sync";
+            this.tab1.Label = "O2G Calendar Sync";
             this.tab1.Name = "tab1";
             // 
             // group1
@@ -55,7 +55,7 @@
             // Sync_BTN
             // 
             this.Sync_BTN.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.Sync_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.sync_gateway_icon;
+            this.Sync_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.synchronization_arrows;
             this.Sync_BTN.Label = "Sync";
             this.Sync_BTN.Name = "Sync_BTN";
             this.Sync_BTN.ShowImage = true;
@@ -63,14 +63,18 @@
             // 
             // Scheduler_BTN
             // 
+            this.Scheduler_BTN.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.Scheduler_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.calendar;
             this.Scheduler_BTN.Label = "Scheduler";
             this.Scheduler_BTN.Name = "Scheduler_BTN";
+            this.Scheduler_BTN.ShowImage = true;
             this.Scheduler_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Settings_BTN_Click);
             // 
             // Debug_BTN
             // 
             this.Debug_BTN.Label = "Debug";
             this.Debug_BTN.Name = "Debug_BTN";
+            this.Debug_BTN.Visible = false;
             this.Debug_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Debug_BTN_Click);
             // 
             // SyncRibbon

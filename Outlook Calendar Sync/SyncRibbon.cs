@@ -17,7 +17,11 @@ namespace Outlook_Calendar_Sync {
                 Settings.Default.IsInitialLoad = false;
                 Settings.Default.Save();
             }
-                
+
+#if DEBUG
+            Debug_BTN.Visible = true;
+#endif
+
         }
 
         private void Sync_BTN_Click( object sender, RibbonControlEventArgs e ) {
