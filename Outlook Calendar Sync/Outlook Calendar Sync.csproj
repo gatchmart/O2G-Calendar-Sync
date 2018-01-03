@@ -26,7 +26,7 @@
     <OutputType>Library</OutputType>
     <NoStandardLibraries>false</NoStandardLibraries>
     <RootNamespace>Outlook_Calendar_Sync</RootNamespace>
-    <AssemblyName>Outlook Calendar Sync</AssemblyName>
+    <AssemblyName>O2G Calendar Sync</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <DefineConstants>VSTO40</DefineConstants>
     <IsWebBootstrapper>False</IsWebBootstrapper>
@@ -34,15 +34,15 @@
     <PublishUrl>publish\</PublishUrl>
     <InstallUrl />
     <TargetCulture>en</TargetCulture>
-    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <ApplicationVersion>1.0.0.2</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>days</UpdateIntervalUnits>
-    <ProductName>Outlook Calendar Sync</ProductName>
-    <PublisherName />
+    <ProductName>O2G Calendar Sync</ProductName>
+    <PublisherName>GAM%27s Apps</PublisherName>
     <SupportUrl />
-    <FriendlyName>Outlook Calendar Sync</FriendlyName>
+    <FriendlyName>O2G Calendar Sync</FriendlyName>
     <OfficeApplicationDescription />
     <LoadBehavior>3</LoadBehavior>
   </PropertyGroup>
@@ -99,7 +99,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\Outlook Calendar Sync.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\O2G Calendar Sync.xml</DocumentationFile>
   </PropertyGroup>
   <!--
     This section defines properties that are set when the "Release" configuration is selected.
@@ -132,23 +132,23 @@
   -->
   <ItemGroup>
     <Reference Include="Accessibility" />
-    <Reference Include="Google.Apis, Version=1.27.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.1.27.1\lib\net45\Google.Apis.dll</HintPath>
+    <Reference Include="Google.Apis, Version=1.32.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.1.32.0\lib\net45\Google.Apis.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Auth, Version=1.27.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Auth.1.27.1\lib\net45\Google.Apis.Auth.dll</HintPath>
+    <Reference Include="Google.Apis.Auth, Version=1.32.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Auth.1.32.0\lib\net45\Google.Apis.Auth.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Auth.PlatformServices, Version=1.27.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Auth.1.27.1\lib\net45\Google.Apis.Auth.PlatformServices.dll</HintPath>
+    <Reference Include="Google.Apis.Auth.PlatformServices, Version=1.32.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Auth.1.32.0\lib\net45\Google.Apis.Auth.PlatformServices.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Calendar.v3, Version=1.27.1.878, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Calendar.v3.1.27.1.878\lib\net45\Google.Apis.Calendar.v3.dll</HintPath>
+    <Reference Include="Google.Apis.Calendar.v3, Version=1.32.0.1081, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Calendar.v3.1.32.0.1081\lib\net45\Google.Apis.Calendar.v3.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Core, Version=1.27.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Core.1.27.1\lib\net45\Google.Apis.Core.dll</HintPath>
+    <Reference Include="Google.Apis.Core, Version=1.32.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Core.1.32.0\lib\net45\Google.Apis.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.PlatformServices, Version=1.27.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.1.27.1\lib\net45\Google.Apis.PlatformServices.dll</HintPath>
+    <Reference Include="Google.Apis.PlatformServices, Version=1.32.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.1.32.0\lib\net45\Google.Apis.PlatformServices.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -212,6 +212,7 @@
   -->
   <ItemGroup>
     <Compile Include="Archiver.cs" />
+    <Compile Include="Attendee.cs" />
     <Compile Include="CalendarItem.cs" />
     <Compile Include="CompareForm.cs">
       <SubType>Form</SubType>
@@ -219,39 +220,62 @@
     <Compile Include="CompareForm.Designer.cs">
       <DependentUpon>CompareForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="DebuggingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DebuggingForm.Designer.cs" Condition="'$(Configuration)' == 'Debug'">
+      <DependentUpon>DebuggingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="DifferencesForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="DifferencesForm.Designer.cs">
       <DependentUpon>DifferencesForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Enums\CalendarItemAction.cs" />
+    <Compile Include="Enums\CalendarItemChanges.cs" />
+    <Compile Include="Enums\DaysOfWeek.cs" />
+    <Compile Include="Enums\DifferencesFormResults.cs" />
+    <Compile Include="Enums\RecurrenceType.cs" />
+    <Compile Include="Enums\RetryAction.cs" />
     <Compile Include="GoogleSync.cs" />
+    <Compile Include="GuidCreator.cs" />
+    <Compile Include="Identifier.cs" />
     <Compile Include="InitialLoadForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="InitialLoadForm.Designer.cs">
       <DependentUpon>InitialLoadForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Log.cs" />
     <Compile Include="OutlookSync.cs" />
-    <Compile Include="Precedence.cs" />
+    <Compile Include="Enums\Precedence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ContactItem.cs" />
-    <Compile Include="Scheduler.cs" />
-    <Compile Include="SchedulerForm.cs">
+    <Compile Include="Scheduler\AutoSyncEvent.cs" />
+    <Compile Include="Scheduler\Scheduler.cs" />
+    <Compile Include="Scheduler\SchedulerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SchedulerForm.Designer.cs">
+    <Compile Include="Scheduler\SchedulerForm.Designer.cs">
       <DependentUpon>SchedulerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Scheduler\RetryTask.cs" />
+    <Compile Include="Scheduler\SchedulerTask.cs" />
+    <Compile Include="SerializableDictionary.cs" />
     <Compile Include="Syncer.cs" />
     <Compile Include="SyncPair.cs" />
     <Compile Include="TimeZoneConverter.cs" />
+    <None Include="O2GKey.pfx" />
     <None Include="Resources\client_secret.json" />
     <None Include="Resources\sync-gateway-icon.png" />
     <EmbeddedResource Include="CompareForm.resx">
       <DependentUpon>CompareForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DebuggingForm.resx">
+      <DependentUpon>DebuggingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="DifferencesForm.resx">
       <DependentUpon>DifferencesForm.cs</DependentUpon>
@@ -269,7 +293,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="SchedulerForm.resx">
+    <EmbeddedResource Include="Scheduler\SchedulerForm.resx">
       <DependentUpon>SchedulerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SyncerForm.resx">
@@ -279,8 +303,9 @@
     <EmbeddedResource Include="SyncRibbon.resx">
       <DependentUpon>SyncRibbon.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="app.config" />
-    <None Include="Outlook Calendar Sync_TemporaryKey.pfx" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -315,6 +340,12 @@
     </Compile>
     <AppDesigner Include="Properties\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\synchronization-arrows.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\calendar.png" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -323,10 +354,13 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>Outlook Calendar Sync_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>O2GKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>0FA833B709AB0BF4BDB132222B44078D34C8C9E4</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>4E6840ABD2FB89570921EE1ADEAC74E812C4B6EA</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <!-- Include the build rules for a C# project. -->
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -337,8 +371,8 @@
     <VisualStudio>
       <FlavorProperties GUID="{BAA0C2D2-18E2-41B9-852F-F413020CAA33}">
         <ProjectProperties HostName="Outlook" HostPackage="{29A7B9D7-A7F1-4328-8EF0-6B2D1A56B2C1}" OfficeVersion="15.0" VstxVersion="4.0" ApplicationType="Outlook" Language="cs" TemplatesPath="" DebugInfoExeName="#Software\Microsoft\Office\16.0\Outlook\InstallRoot\Path#outlook.exe" AddItemTemplatesGuid="{A58A78EB-1C92-4DDD-80CF-E8BD872ABFC4}" />
-        <Host Name="Outlook" GeneratedCodeNamespace="Outlook_Calendar_Sync" IconIndex="0">
-          <HostItem Name="ThisAddIn" Code="ThisAddIn.cs" CanonicalName="AddIn" CanActivate="false" IconIndex="1" Blueprint="ThisAddIn.Designer.xml" GeneratedCode="ThisAddIn.Designer.cs" />
+        <Host Name="Outlook" GeneratedCodeNamespace="Outlook_Calendar_Sync" PublishedHash="69C324AB27932AA2FBF2B7EA72250886FF164DE6" IconIndex="0">
+          <HostItem Name="ThisAddIn" Code="ThisAddIn.cs" CanonicalName="AddIn" CanActivate="false" IconIndex="1" Blueprint="ThisAddIn.Designer.xml" GeneratedCode="ThisAddIn.Designer.cs" PublishedHash="F83FA921A6BC5DD84BF2887A0FB0D5F29DC7BBA6" />
         </Host>
       </FlavorProperties>
     </VisualStudio>

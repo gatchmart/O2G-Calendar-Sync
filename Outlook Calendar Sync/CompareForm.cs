@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using Outlook_Calendar_Sync.Enums;
 
 namespace Outlook_Calendar_Sync {
     public partial class CompareForm : Form {

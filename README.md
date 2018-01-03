@@ -12,3 +12,6 @@ select "Add Existing File...". Select the client_secret.json file and click okay
 
 If you have any issues running the plugin please create an issue for me to troubleshoot and fix. Make sure you provide details of how to
 recreate the issue. If you have the call stack paste a copy of it in the issue as well.
+
+
+Icons made by [Smashicons](https://www.flaticon.com/authors/smashicons) and [Google](https://www.flaticon.com/authors/google) from [www.flaticon.com](https://www.flaticon.com/) is licensed by [CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).

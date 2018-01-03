@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Microsoft.Office.Tools.Ribbon;
+﻿using Microsoft.Office.Tools.Ribbon;
 using Outlook_Calendar_Sync.Properties;
+using Outlook_Calendar_Sync.Scheduler;
 
 namespace Outlook_Calendar_Sync {
     public partial class SyncRibbon {
@@ -17,7 +17,11 @@ namespace Outlook_Calendar_Sync {
                 Settings.Default.IsInitialLoad = false;
                 Settings.Default.Save();
             }
-                
+
+#if DEBUG
+            Debug_BTN.Visible = true;
+#endif
+
         }
 
         private void Sync_BTN_Click( object sender, RibbonControlEventArgs e ) {
@@ -27,6 +31,11 @@ namespace Outlook_Calendar_Sync {
         private void Settings_BTN_Click( object sender, RibbonControlEventArgs e ) {
             var settings = new SchedulerForm();
             settings.Show();
+        }
+
+        private void Debug_BTN_Click( object sender, RibbonControlEventArgs e ) {
+            var debug = new DebuggingForm();
+            debug.Show();
         }
     }
 }

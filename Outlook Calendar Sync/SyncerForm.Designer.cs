@@ -61,7 +61,7 @@
             this.checkBox1.Checked = true;
             this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBox1.Location = new System.Drawing.Point(6, 19);
-            this.checkBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBox1.Margin = new System.Windows.Forms.Padding(2);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(140, 17);
             this.checkBox1.TabIndex = 4;
@@ -125,7 +125,7 @@
             // progressBar1
             // 
             this.progressBar1.Location = new System.Drawing.Point(8, 236);
-            this.progressBar1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.progressBar1.Margin = new System.Windows.Forms.Padding(2);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(248, 19);
             this.progressBar1.TabIndex = 5;
@@ -134,7 +134,7 @@
             // 
             this.googleCal_CB.FormattingEnabled = true;
             this.googleCal_CB.Location = new System.Drawing.Point(112, 51);
-            this.googleCal_CB.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.googleCal_CB.Margin = new System.Windows.Forms.Padding(2);
             this.googleCal_CB.Name = "googleCal_CB";
             this.googleCal_CB.Size = new System.Drawing.Size(144, 21);
             this.googleCal_CB.TabIndex = 6;
@@ -162,7 +162,7 @@
             // 
             this.outlookCal_CB.FormattingEnabled = true;
             this.outlookCal_CB.Location = new System.Drawing.Point(112, 76);
-            this.outlookCal_CB.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.outlookCal_CB.Margin = new System.Windows.Forms.Padding(2);
             this.outlookCal_CB.Name = "outlookCal_CB";
             this.outlookCal_CB.Size = new System.Drawing.Size(144, 21);
             this.outlookCal_CB.TabIndex = 9;
@@ -180,12 +180,13 @@
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(119, 204);
-            this.button1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.button1.Margin = new System.Windows.Forms.Padding(2);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(56, 19);
             this.button1.TabIndex = 11;
             this.button1.Text = "button1";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // SyncerForm

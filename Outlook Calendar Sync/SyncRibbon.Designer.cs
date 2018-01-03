@@ -32,6 +32,7 @@
             this.group1 = this.Factory.CreateRibbonGroup();
             this.Sync_BTN = this.Factory.CreateRibbonButton();
             this.Scheduler_BTN = this.Factory.CreateRibbonButton();
+            this.Debug_BTN = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.SuspendLayout();
@@ -40,20 +41,21 @@
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
-            this.tab1.Label = "Cal Sync";
+            this.tab1.Label = "O2G Calendar Sync";
             this.tab1.Name = "tab1";
             // 
             // group1
             // 
             this.group1.Items.Add(this.Sync_BTN);
             this.group1.Items.Add(this.Scheduler_BTN);
+            this.group1.Items.Add(this.Debug_BTN);
             this.group1.Label = "Cal Sync";
             this.group1.Name = "group1";
             // 
             // Sync_BTN
             // 
             this.Sync_BTN.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.Sync_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.sync_gateway_icon;
+            this.Sync_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.synchronization_arrows;
             this.Sync_BTN.Label = "Sync";
             this.Sync_BTN.Name = "Sync_BTN";
             this.Sync_BTN.ShowImage = true;
@@ -61,9 +63,19 @@
             // 
             // Scheduler_BTN
             // 
+            this.Scheduler_BTN.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.Scheduler_BTN.Image = global::Outlook_Calendar_Sync.Properties.Resources.calendar;
             this.Scheduler_BTN.Label = "Scheduler";
             this.Scheduler_BTN.Name = "Scheduler_BTN";
+            this.Scheduler_BTN.ShowImage = true;
             this.Scheduler_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Settings_BTN_Click);
+            // 
+            // Debug_BTN
+            // 
+            this.Debug_BTN.Label = "Debug";
+            this.Debug_BTN.Name = "Debug_BTN";
+            this.Debug_BTN.Visible = false;
+            this.Debug_BTN.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.Debug_BTN_Click);
             // 
             // SyncRibbon
             // 
@@ -86,6 +98,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton Sync_BTN;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton Scheduler_BTN;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton Debug_BTN;
     }
 
     partial class ThisRibbonCollection {

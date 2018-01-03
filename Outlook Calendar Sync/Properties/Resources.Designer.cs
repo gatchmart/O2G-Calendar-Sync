@@ -61,6 +61,16 @@ namespace Outlook_Calendar_Sync.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap calendar {
+            get {
+                object obj = ResourceManager.GetObject("calendar", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] client_secret {
@@ -73,19 +83,10 @@ namespace Outlook_Calendar_Sync.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap sync_gateway_icon {
+        internal static System.Drawing.Bitmap synchronization_arrows {
             get {
-                object obj = ResourceManager.GetObject("sync_gateway_icon", resourceCulture);
+                object obj = ResourceManager.GetObject("synchronization_arrows", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to true.
-        /// </summary>
-        internal static string UpdateRecurrance {
-            get {
-                return ResourceManager.GetString("UpdateRecurrance", resourceCulture);
             }
         }
     }

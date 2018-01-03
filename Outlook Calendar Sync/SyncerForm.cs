@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Google.Apis.Calendar.v3.Data;
+using Outlook_Calendar_Sync.Enums;
 using Settings = Outlook_Calendar_Sync.Properties.Settings;
 
 namespace Outlook_Calendar_Sync {
@@ -22,6 +23,9 @@ namespace Outlook_Calendar_Sync {
             InitializeComponent();
             m_syncer = Syncer.Instance;
             m_multiThreaded = Settings.Default.MultiThreaded;
+#if DEBUG
+            button1.Visable = true;
+#endif
         }
 
         public void StartUpdate( List<CalendarItem> list ) {
@@ -38,7 +42,9 @@ namespace Outlook_Calendar_Sync {
             // Create the SyncPair
             var pair = new SyncPair {
                 GoogleName = googleCal_CB.SelectedItem.ToString(),
-                OutlookName = outlookCal_CB.SelectedItem.ToString()
+                GoogleId = m_googleFolders.Items[googleCal_CB.SelectedIndex].Id,
+                OutlookName = outlookCal_CB.SelectedItem.ToString(),
+                OutlookId = m_outlookFolders[outlookCal_CB.SelectedIndex].EntryID
             };
 
             // Set the current outlook working folder to the folder selected by the user.
@@ -53,20 +59,28 @@ namespace Outlook_Calendar_Sync {
 
             // Get the final list using the Syncer
             var finalList = m_syncer.GetFinalList( checkBox1.Checked, Start_DTP.Value, End_DTP.Value );
-            
 
-            // Display the differences
-            var compare = new CompareForm();
-            compare.SetParent( this );
-            compare.SetCalendars( pair );
-            compare.LoadData( finalList );
-            compare.Show( this );
+
+            if ( finalList.Count == 0 )
+            {
+                MessageBox.Show( $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.", "No Events", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information );
+            }
+            else
+            {
+                // Display the differences
+                var compare = new CompareForm();
+                compare.SetParent( this );
+                compare.SetCalendars( pair );
+                compare.LoadData( finalList );
+                compare.Show( this );
+            }
             
         }
 
         private void SyncerForm_Load( object sender, EventArgs e ) {
             OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-            GoogleSync.Syncer.SetGoogleWorkingFolder( "", true );
+            GoogleSync.Syncer.ResetGoogleWorkingFolder( true );
 
             // Get the list of Google Calendars and load them into googleCal_CB
             m_googleFolders = GoogleSync.Syncer.PullCalendars();
@@ -86,7 +100,7 @@ namespace Outlook_Calendar_Sync {
             End_DTP.Enabled = checkBox1.Checked;
         }
 
-        #region BackgroundWorker Methods
+#region BackgroundWorker Methods
 
         private void calendarUpdate_WORKER_DoWork( object sender, System.ComponentModel.DoWorkEventArgs e ) {
             List<CalendarItem> list = (List<CalendarItem>)e.Argument;
@@ -112,7 +126,7 @@ namespace Outlook_Calendar_Sync {
                 progressBar1.Value = progress;
             }
         }
-        #endregion BackgroundWorker Methods
+#endregion BackgroundWorker Methods
 
         private void button1_Click( object sender, EventArgs e ) {
             var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
