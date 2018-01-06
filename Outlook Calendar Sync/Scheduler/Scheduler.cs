@@ -279,8 +279,10 @@ namespace Outlook_Calendar_Sync.Scheduler
                                     // There is a problem when using sync tokens. Google will only return new, modified, or deleted events
                                     // that happened after the sync token was created.
                                     Syncer.Instance.IsUsingSyncToken = true;
-                                    Syncer.Instance.SynchornizePairs( schedulerTask.Pair, schedulerTask.Precedence,
-                                        schedulerTask.SilentSync );
+                                    Syncer.Instance.SynchornizePairs( 
+                                        schedulerTask.Pair,
+                                        schedulerTask.Precedence == Precedence.None ? Precedence.Outlook : schedulerTask.Precedence,
+                                        schedulerTask.Precedence == Precedence.None || schedulerTask.SilentSync );
                                     schedulerTask.LastRunTime = DateTime.Now;
                                     Syncer.Instance.IsUsingSyncToken = false;
                                 }

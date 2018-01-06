@@ -23,6 +23,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SyncerForm));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -203,13 +204,15 @@
             this.Controls.Add(this.googleCal_CB);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.groupBox1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "SyncerForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Cal Sync";
+            this.Text = "O2G Calendar Sync";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SyncerForm_FormClosing);
             this.Load += new System.EventHandler(this.SyncerForm_Load);
+            this.Shown += new System.EventHandler(this.SyncerForm_Shown);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);

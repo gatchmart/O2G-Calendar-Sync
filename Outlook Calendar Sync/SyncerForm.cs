@@ -24,7 +24,7 @@ namespace Outlook_Calendar_Sync {
             m_syncer = Syncer.Instance;
             m_multiThreaded = Settings.Default.MultiThreaded;
 #if DEBUG
-            button1.Visable = true;
+            button1.Visible = true;
 #endif
         }
 
@@ -60,7 +60,6 @@ namespace Outlook_Calendar_Sync {
             // Get the final list using the Syncer
             var finalList = m_syncer.GetFinalList( checkBox1.Checked, Start_DTP.Value, End_DTP.Value );
 
-
             if ( finalList.Count == 0 )
             {
                 MessageBox.Show( $"There are no differences between the {pair.GoogleName} Google Calender and the {pair.OutlookName} Outlook Calender.", "No Events", MessageBoxButtons.OK,
@@ -79,20 +78,6 @@ namespace Outlook_Calendar_Sync {
         }
 
         private void SyncerForm_Load( object sender, EventArgs e ) {
-            OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
-            GoogleSync.Syncer.ResetGoogleWorkingFolder( true );
-
-            // Get the list of Google Calendars and load them into googleCal_CB
-            m_googleFolders = GoogleSync.Syncer.PullCalendars();
-
-            foreach ( var calendarListEntry in m_googleFolders.Items )
-                googleCal_CB.Items.Add( calendarListEntry.Summary );
-
-            // Get the list of Outlook Calendars and load them into the outlookCal_CB
-            m_outlookFolders = OutlookSync.Syncer.PullCalendars();
-
-            foreach ( var folder in m_outlookFolders )
-                outlookCal_CB.Items.Add( folder.Name );
         }
 
         private void checkBox1_CheckedChanged( object sender, EventArgs e ) {
@@ -121,12 +106,13 @@ namespace Outlook_Calendar_Sync {
             // If these threads are different, it returns true.
             if ( progressBar1.InvokeRequired ) {
                 var d = new SetProgressCallback( SetProgress );
-                Invoke( d, new[] { progress } );
+                Invoke( d, progress );
             } else {
                 progressBar1.Value = progress;
             }
         }
-#endregion BackgroundWorker Methods
+
+        #endregion BackgroundWorker Methods
 
         private void button1_Click( object sender, EventArgs e ) {
             var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
@@ -152,5 +138,30 @@ namespace Outlook_Calendar_Sync {
             }
         }
 
+        private void ReloadFolders()
+        {
+            m_googleFolders = null;
+            m_outlookFolders?.Clear();
+
+            OutlookSync.Syncer.SetOutlookWorkingFolder( "", true );
+            GoogleSync.Syncer.ResetGoogleWorkingFolder( true );
+
+            // Get the list of Google Calendars and load them into googleCal_CB
+            m_googleFolders = GoogleSync.Syncer.PullCalendars();
+
+            foreach ( var calendarListEntry in m_googleFolders.Items )
+                googleCal_CB.Items.Add( calendarListEntry.Summary );
+
+            // Get the list of Outlook Calendars and load them into the outlookCal_CB
+            m_outlookFolders = OutlookSync.Syncer.PullCalendars();
+
+            foreach ( var folder in m_outlookFolders )
+                outlookCal_CB.Items.Add( folder.Name );
+        }
+
+        private void SyncerForm_Shown( object sender, EventArgs e )
+        {
+            ReloadFolders();
+        }
     }
 }

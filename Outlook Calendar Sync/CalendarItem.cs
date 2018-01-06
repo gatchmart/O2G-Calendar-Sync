@@ -6,6 +6,7 @@ using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.Office.Interop.Outlook;
 using Outlook_Calendar_Sync.Enums;
@@ -310,7 +311,11 @@ namespace Outlook_Calendar_Sync {
             IsAllDayEvent = ( ev.Start.DateTimeRaw == null && ev.End.DateTimeRaw == null );
 
             if ( ev.Reminders.Overrides != null )
-                ReminderTime = ev.Reminders.Overrides.First( x => x.Method == "email" || x.Method == "popup" ).Minutes ?? 0;
+            {
+                EventReminder reminder = ev.Reminders.Overrides.FirstOrDefault( x => x.Method == "popup" );
+
+                ReminderTime = reminder?.Minutes ?? DEFAULT_REMINDER_TIME;
+            }
             else
             {
                 m_isUsingDefaultReminders = true;
