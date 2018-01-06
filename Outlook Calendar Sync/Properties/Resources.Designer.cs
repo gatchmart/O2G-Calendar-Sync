@@ -89,5 +89,15 @@ namespace Outlook_Calendar_Sync.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon synchronization_arrows_dhZ_icon {
+            get {
+                object obj = ResourceManager.GetObject("synchronization_arrows_dhZ_icon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
     }
 }

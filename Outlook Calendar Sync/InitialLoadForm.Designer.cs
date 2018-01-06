@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InitialLoadForm));
             this.label1 = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.Connect_LBL = new System.Windows.Forms.Label();
@@ -434,6 +435,7 @@
             this.Controls.Add(this.Connect_LBL);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "InitialLoadForm";
             this.Text = "Initial Setup";
             this.Load += new System.EventHandler(this.InitialLoadForm_Load);
