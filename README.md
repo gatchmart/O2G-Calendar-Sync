@@ -13,6 +13,7 @@ The first release of the O2G Calendar Sync add-in is available for use. It comes
 > * Custom option for the Scheduler.
 > * Manual syncing available.
 
+
 ## Installation
 > Installation is simple just extract the O2G.1.0.zip and run the setup executable.  
 > Upon initial use the Initial setup will show up. This will allow you to connect to Google, select the calendars you want to sync and perform the initial sync.
