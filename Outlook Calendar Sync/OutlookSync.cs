@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Outlook;
 using Outlook_Calendar_Sync.Enums;
-using Outlook_Calendar_Sync.Properties;
 using Application = Microsoft.Office.Interop.Outlook.Application;
 using Exception = System.Exception;
 
 namespace Outlook_Calendar_Sync {
 
-    struct OutlookFolder {
+    internal struct OutlookFolder {
         public string Name;
         public string EntryID;
     }
 
-    class OutlookSync
+    internal class OutlookSync
     {
 
         public static OutlookSync Syncer => _instance ?? ( _instance = new OutlookSync() );
@@ -49,7 +47,8 @@ namespace Outlook_Calendar_Sync {
 
                 // Update the old Identifier
                 var oldId = item.CalendarItemIdentifier;
-                item.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newEvent.EntryID, newEvent.GlobalAppointmentID );
+                // TODO: regenerate hash
+                item.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newEvent.EntryID, newEvent.GlobalAppointmentID, EventHasher.GetHash( item ) );
                 Archiver.Instance.UpdateIdentifier( oldId, item.CalendarItemIdentifier );
 
                 Log.Write( $"Added {item} to Outlooks Calendar {m_folder.Name}" );
@@ -207,8 +206,8 @@ namespace Outlook_Calendar_Sync {
             try
             {
                 var oldId = ev.CalendarItemIdentifier;
-                if ( ev.Recurrence != null && Settings.Default.UpdateRecurrance )
-                {
+                //if ( ev.Recurrence != null && Settings.Default.UpdateRecurrance )
+                //{
                     Log.Write( $"Updating recurring Outlook appointment, {ev.Subject}" );
 
                     if ( !string.IsNullOrEmpty( ev.CalendarItemIdentifier.OutlookEntryId ) )
@@ -225,7 +224,7 @@ namespace Outlook_Calendar_Sync {
                                 item.Delete();
                                 newMaster.Save();
 
-                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newMaster.EntryID, newMaster.GlobalAppointmentID );
+                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, newMaster.EntryID, newMaster.GlobalAppointmentID, EventHasher.GetHash( ev ) );
 
                                 Marshal.ReleaseComObject( temp );
                                 Marshal.ReleaseComObject( newMaster );
@@ -234,32 +233,33 @@ namespace Outlook_Calendar_Sync {
                                 ev.GetOutlookAppointment( item );
                                 item.Save();
 
-                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID );
+                                ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID, EventHasher.GetHash( ev ) );
                             }
 
                             Marshal.ReleaseComObject( item );
                         }  
                     }
-                } else
-                {
-                    Log.Write( $"Updating Outlook appointment, {ev.Subject}" );
+                //} else
+                //{
+                //    Log.Write( $"Updating Outlook appointment, {ev.Subject}" );
 
-                    if ( !string.IsNullOrEmpty( ev.CalendarItemIdentifier.OutlookEntryId ) )
-                    {
-                        AppointmentItem item =
-                            CurrentApplication.Session.GetItemFromID( ev.CalendarItemIdentifier.OutlookEntryId, m_folder.Store.StoreID );
+                //    if ( !string.IsNullOrEmpty( ev.CalendarItemIdentifier.OutlookEntryId ) )
+                //    {
+                //        AppointmentItem item =
+                //            CurrentApplication.Session.GetItemFromID( ev.CalendarItemIdentifier.OutlookEntryId, m_folder.Store.StoreID );
 
-                        if ( item != null )
-                        {
-                            ev.GetOutlookAppointment( item );
-                            item.Save();
+                //        if ( item != null )
+                //        {
+                //            ev.GetOutlookAppointment( item );
+                //            item.Save();
 
-                            ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID );
+                //            // TODO: regenerate hash
+                //            ev.CalendarItemIdentifier = new Identifier( oldId.GoogleId, oldId.GoogleICalUId, item.EntryID, item.GlobalAppointmentID, EventHasher.GetHash( ev ) );
 
-                            Marshal.ReleaseComObject( item );
-                        }
-                    }
-                }
+                //            Marshal.ReleaseComObject( item );
+                //        }
+                //    }
+                //}
 
                 ev.Action &= ~CalendarItemAction.GeneratedId;
                 ev.Action &= ~CalendarItemAction.OutlookUpdate;

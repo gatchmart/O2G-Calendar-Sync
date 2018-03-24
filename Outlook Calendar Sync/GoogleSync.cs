@@ -81,7 +81,7 @@ namespace Outlook_Calendar_Sync {
                 Log.Write( $"Added {item.Subject} Appointment to Google" );
 
                 var oldId = item.CalendarItemIdentifier;
-                item.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId );
+                item.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId, EventHasher.GetHash( item ) );
 
                 Archiver.Instance.UpdateIdentifier( oldId, item.CalendarItemIdentifier );
 
@@ -294,7 +294,8 @@ namespace Outlook_Calendar_Sync {
                 var newEvent = m_service.Events.Update( gEvent, m_currentCalendar, gEvent.Id ).Execute();
 
                 var oldId = ev.CalendarItemIdentifier;
-                ev.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId );
+                // TODO: regenerate hash
+                ev.CalendarItemIdentifier = new Identifier( newEvent.Id, newEvent.ICalUID, oldId.OutlookEntryId, oldId.OutlookGlobalId, EventHasher.GetHash( ev ) );
 
                 Archiver.Instance.UpdateIdentifier( oldId, ev.CalendarItemIdentifier );
 

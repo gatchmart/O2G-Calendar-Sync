@@ -9,6 +9,7 @@ namespace Outlook_Calendar_Sync
         public string GoogleICalUId { get; set; }
         public string OutlookEntryId { get; set; }
         public string OutlookGlobalId { get; set; }
+        public string EventHash { get; set; }
 
         public Identifier()
         {
@@ -16,20 +17,22 @@ namespace Outlook_Calendar_Sync
             GoogleICalUId = "";
             OutlookEntryId = "";
             OutlookGlobalId = "";
+            EventHash = "";
         }
 
-        public Identifier( string gid, string guid, string oeid, string osid )
+        public Identifier( string gid, string guid, string oeid, string osid, string hash = "")
         {
             GoogleId = gid;
             GoogleICalUId = guid;
             OutlookEntryId = oeid;
             OutlookGlobalId = osid;
+            EventHash = hash;
         }
 
         public override string ToString()
         {
             return
-                $"\tIdentifier:\n\t\tGoogleId: {GoogleId}\n\t\tGoogle iCalUID: {GoogleICalUId}\n\t\tOutlook EntryID: {OutlookEntryId}";
+                $"\tIdentifier:\n\t\tGoogleId: {GoogleId}\n\t\tGoogle iCalUID: {GoogleICalUId}\n\t\tOutlook EntryID: {OutlookEntryId}\n\t\tEvent Hash: {EventHash}";
         }
         
         public bool PartialCompare( string id )
@@ -42,6 +45,7 @@ namespace Outlook_Calendar_Sync
         {
             if ( ReferenceEquals( null, other ) ) return false;
             if ( ReferenceEquals( this, other ) ) return true;
+            if ( EventHash.Equals( other.EventHash ) ) return true;
             return string.Equals( GoogleId, other.GoogleId ) && string.Equals( GoogleICalUId, other.GoogleICalUId ) && string.Equals( OutlookEntryId, other.OutlookEntryId ) && string.Equals( OutlookGlobalId, other.OutlookGlobalId );
         }
 
@@ -61,6 +65,7 @@ namespace Outlook_Calendar_Sync
                 hashCode = ( hashCode * 397 ) ^ ( GoogleICalUId != null ? GoogleICalUId.GetHashCode() : 0 );
                 hashCode = ( hashCode * 397 ) ^ ( OutlookEntryId != null ? OutlookEntryId.GetHashCode() : 0 );
                 hashCode = ( hashCode * 397 ) ^ ( OutlookGlobalId != null ? OutlookGlobalId.GetHashCode() : 0 );
+                hashCode = ( hashCode * 397 ) ^ ( EventHash != null ? EventHash.GetHashCode() : 0 );
                 return hashCode;
             }
         }

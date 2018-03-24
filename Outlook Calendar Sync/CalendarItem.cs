@@ -165,7 +165,7 @@ namespace Outlook_Calendar_Sync {
                 if ( Recurrence != null )
                 {
                     var pattern = item.GetRecurrencePattern();
-                    Recurrence.GetOutlookPattern( ref pattern );
+                    Recurrence.GetOutlookPattern( ref pattern, IsAllDayEvent );
                 }
 
                 foreach ( var attendee in Attendees )
@@ -340,6 +340,8 @@ namespace Outlook_Calendar_Sync {
                     } );
                 }
             }
+
+            CalendarItemIdentifier.EventHash = EventHasher.GetHash( this );
         }
 
         /// <summary>
@@ -454,6 +456,8 @@ namespace Outlook_Calendar_Sync {
                         : new Attendee( item.RequiredAttendees, true ) );
                 }
             }
+
+            CalendarItemIdentifier.EventHash = EventHasher.GetHash( this );
         }
 
         public bool Equals( CalendarItem other )
@@ -461,79 +465,25 @@ namespace Outlook_Calendar_Sync {
             if ( other == null )
                 return false;
 
-            var idEqual = false;
+            var idEqual =
+                EventHasher.Equals( CalendarItemIdentifier.EventHash, other.CalendarItemIdentifier.EventHash );
 
-            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.GoogleId ) &&
-                 !string.IsNullOrEmpty( other.CalendarItemIdentifier.GoogleId ) )
-                idEqual = CalendarItemIdentifier.GoogleId.Equals( other.CalendarItemIdentifier.GoogleId );
+            if ( !idEqual && !string.IsNullOrEmpty( CalendarItemIdentifier.GoogleId ) &&
+                    !string.IsNullOrEmpty( other.CalendarItemIdentifier.GoogleId ) )
+                idEqual |= CalendarItemIdentifier.GoogleId.Equals( other.CalendarItemIdentifier.GoogleId );
 
-            if ( !string.IsNullOrEmpty( CalendarItemIdentifier.OutlookEntryId ) &&
-                 !string.IsNullOrEmpty( other.CalendarItemIdentifier.OutlookEntryId ) )
+            if ( !idEqual && !string.IsNullOrEmpty( CalendarItemIdentifier.OutlookEntryId ) &&
+                    !string.IsNullOrEmpty( other.CalendarItemIdentifier.OutlookEntryId ) )
                 idEqual |= CalendarItemIdentifier.OutlookEntryId.Equals( other.CalendarItemIdentifier.OutlookEntryId );
-
-            if ( Action.HasFlag( CalendarItemAction.ContentsEqual ) )
-            {
-                Changes = CalendarItemChanges.Nothing;
-                GetCalendarDifferences( other );
-                return Changes == CalendarItemChanges.Nothing;
-            }
 
             return idEqual;
         }
 
-        /// <summary>
-        /// Gets the differences between two CalendarItems
-        /// </summary>
-        /// <param name="other">The other CalendarItem to compare</param>
-        public void GetCalendarDifferences( CalendarItem other ) {
-
-            var s = DateTime.Parse( !Start.Equals( StartTimeInTimeZone ) ? StartTimeInTimeZone : Start ).ToUniversalTime();
-            var e = DateTime.Parse( !End.Equals( EndTimeInTimeZone ) ? EndTimeInTimeZone : End ).ToUniversalTime();
-            var ss = DateTime.Parse( !other.Start.Equals( other.StartTimeInTimeZone ) ? other.StartTimeInTimeZone : other.Start ).ToUniversalTime();
-            var ee = DateTime.Parse( !other.End.Equals( other.EndTimeInTimeZone ) ? other.EndTimeInTimeZone : other.End ).ToUniversalTime();
-
-            if ( !s.Equals( ss ) )
-                Changes |= CalendarItemChanges.StartDate;
-
-            if ( !e.Equals( ee ) )
-                Changes |= CalendarItemChanges.EndDate;
-
-            if ( !Subject.Equals( other.Subject ) )
-                Changes |= CalendarItemChanges.Subject;
-
-            if ( !string.IsNullOrEmpty( Location ) || !string.IsNullOrEmpty( other.Location ) )
-                if ( !IgnoreSpaceAndNewLineEquals( Location, other.Location ) )
-                    Changes |= CalendarItemChanges.Location; 
-
-            if ( !string.IsNullOrEmpty( Body ) || !string.IsNullOrEmpty( other.Body ) )
-                if ( !IgnoreSpaceAndNewLineEquals( Body, other.Body ) )
-                    Changes |= CalendarItemChanges.Body;
-
-            if ( !string.IsNullOrEmpty( StartTimeZone ) || !string.IsNullOrEmpty( other.StartTimeZone ) )
-                if ( !IgnoreNullEquals( StartTimeZone, other.StartTimeZone ) )
-                    Changes |= CalendarItemChanges.StartTimeZone;
-
-            if ( !string.IsNullOrEmpty( EndTimeZone ) || !string.IsNullOrEmpty( other.EndTimeZone ) )
-                if ( !IgnoreNullEquals( EndTimeZone, other.EndTimeZone ) )
-                    Changes |= CalendarItemChanges.EndTimeZone;
-
-            if ( ReminderTime >= 0 && other.ReminderTime >= 0 )
-                if ( ReminderTime != 1080 || other.ReminderTime != 1080 )
-                    if ( ReminderTime != other.ReminderTime )
-                        Changes |= CalendarItemChanges.ReminderTime;
-
-            if ( Attendees.Count > 0 && other.Attendees.Count > 0 )
-                if ( !Attendees.All( other.Attendees.Contains ) )
-                    Changes |= CalendarItemChanges.Attendees;
-
-            if ( Recurrence != null && other.Recurrence != null )
-            {
-                if ( Recurrence.Equals( other.Recurrence ) )
-                    Changes |= CalendarItemChanges.Recurrence;
-            } else if ( Recurrence != null || other.Recurrence != null )
-                Changes |= CalendarItemChanges.Recurrence;
-
-            other.Changes = Changes;
+        public bool IsContentsEqual( CalendarItem item )
+        {
+            Changes = CalendarItemChanges.Nothing;
+            GetCalendarDifferences( item );
+            return Changes == CalendarItemChanges.Nothing;
         }
 
         public override string ToString() {
@@ -548,10 +498,11 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( CalendarItemIdentifier.ToString() );
             builder.AppendLine( "\tReminder Time: " + ReminderTime );
             builder.AppendLine( "\tUsing Default Reminder: " + ( m_isUsingDefaultReminders ? "Yes" : "No" ) );
+            builder.AppendLine( "\tIs All Day Event: " + ( IsAllDayEvent ? "Yes" : "No" ) );
 
             if ( Attendees != null && Attendees.Count > 0 )
             {
-                builder.AppendLine( "\tAttendees:" );
+                builder.AppendLine( "\tAttendees: " );
 
                 foreach ( var attendee in Attendees )
                     builder.AppendLine( "\t\t" + attendee.Name + ", " + attendee.Email + ", " +
@@ -560,7 +511,7 @@ namespace Outlook_Calendar_Sync {
 
             if ( Recurrence != null )
             {
-                builder.AppendLine( "\tRecurrence:" );
+                builder.AppendLine( "\tRecurrence: " );
                 builder.AppendLine( Recurrence.ToString() );
             }
 
@@ -627,6 +578,154 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( "----------------" + Subject + "----------------" );
 
             return builder.ToString();
+        }
+
+        public string GetHasherString()
+        {
+            var builder = new StringBuilder();
+
+            builder.Append( Start );
+
+            builder.Append( "Start: " + Start );
+            builder.Append( "End: " + End );
+            builder.Append( "Start Time Zone: " + StartTimeZone );
+            builder.Append( "End Time Zone: " + EndTimeZone );
+            builder.Append( "Location: " + Location );
+            builder.Append( "Body: " + Body );
+            //builder.Append( CalendarItemIdentifier.ToString() );
+            builder.Append( "Reminder Time: " + ReminderTime );
+            builder.Append( "Using Default Reminder: " + ( m_isUsingDefaultReminders ? "Yes" : "No" ) );
+
+            if ( Attendees != null && Attendees.Count > 0 )
+            {
+                builder.Append( "Attendees: " );
+                foreach ( var attendee in Attendees )
+                    builder.Append( attendee.Name + ", " + attendee.Email + ", " +
+                                        ( attendee.Required ? "Required" : "Not Required" ) );
+            }
+
+            if ( Recurrence != null )
+            {
+                builder.Append( "Recurrence: " );
+                builder.Append( Recurrence.GetHasherString() );
+            }
+
+            if ( Changes != CalendarItemChanges.Nothing )
+            {
+                builder.Append( "Changes: " );
+                if ( Changes.HasFlag( CalendarItemChanges.StartDate ) )
+                    builder.Append( "Change Start Date | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.EndDate ) )
+                    builder.Append( "Change End Date | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.Location ) )
+                    builder.Append( "Change Location | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.Body ) )
+                    builder.Append( "Change Body | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.Subject ) )
+                    builder.Append( "Change Subject | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.StartTimeZone ) )
+                    builder.Append( "Change Start Time Zone | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.EndTimeZone ) )
+                    builder.Append( "Change End Time Zone | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.ReminderTime ) )
+                    builder.Append( "Change Reminder Time | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.Attendees ) )
+                    builder.Append( "Change Attendees | " );
+
+                if ( Changes.HasFlag( CalendarItemChanges.Recurrence ) )
+                    builder.Append( "Change Recurrence | " );
+
+                builder.Remove( builder.Length - 2, 2 );
+            }
+
+            if ( Action != CalendarItemAction.Nothing )
+            {
+                builder.Append( "Action: " );
+                if ( Action.HasFlag( CalendarItemAction.ContentsEqual ) )
+                    builder.Append( "Action Contents Equal | " );
+                if ( Action.HasFlag( CalendarItemAction.GeneratedId ) )
+                    builder.Append( "Action Generated ID | " );
+                if ( Action.HasFlag( CalendarItemAction.GoogleAdd ) )
+                    builder.Append( "Action Google Add | " );
+                if ( Action.HasFlag( CalendarItemAction.GoogleDelete ) )
+                    builder.Append( "Action Google Delete | " );
+                if ( Action.HasFlag( CalendarItemAction.GoogleUpdate ) )
+                    builder.Append( "Action Google Update | " );
+                if ( Action.HasFlag( CalendarItemAction.OutlookAdd ) )
+                    builder.Append( "Action Outlook Add | " );
+                if ( Action.HasFlag( CalendarItemAction.OutlookDelete ) )
+                    builder.Append( "Action Outlook Delete | " );
+                if ( Action.HasFlag( CalendarItemAction.OutlookUpdate ) )
+                    builder.Append( "Action Outlook Update | " );
+                builder.Remove( builder.Length - 2, 2 );
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Gets the differences between two CalendarItems
+        /// </summary>
+        /// <param name="other">The other CalendarItem to compare</param>
+        private void GetCalendarDifferences( CalendarItem other )
+        {
+
+            var s = DateTime.Parse( !Start.Equals( StartTimeInTimeZone ) ? StartTimeInTimeZone : Start ).ToUniversalTime();
+            var e = DateTime.Parse( !End.Equals( EndTimeInTimeZone ) ? EndTimeInTimeZone : End ).ToUniversalTime();
+            var ss = DateTime.Parse( !other.Start.Equals( other.StartTimeInTimeZone ) ? other.StartTimeInTimeZone : other.Start ).ToUniversalTime();
+            var ee = DateTime.Parse( !other.End.Equals( other.EndTimeInTimeZone ) ? other.EndTimeInTimeZone : other.End ).ToUniversalTime();
+
+            if ( !s.Equals( ss ) )
+                Changes |= CalendarItemChanges.StartDate;
+
+            if ( !e.Equals( ee ) )
+                Changes |= CalendarItemChanges.EndDate;
+
+            if ( !Subject.Equals( other.Subject ) )
+                Changes |= CalendarItemChanges.Subject;
+
+            if ( !string.IsNullOrEmpty( Location ) || !string.IsNullOrEmpty( other.Location ) )
+                if ( !IgnoreSpaceAndNewLineEquals( Location, other.Location ) )
+                    Changes |= CalendarItemChanges.Location;
+
+            if ( !string.IsNullOrEmpty( Body ) || !string.IsNullOrEmpty( other.Body ) )
+                if ( !IgnoreSpaceAndNewLineEquals( Body, other.Body ) )
+                    Changes |= CalendarItemChanges.Body;
+
+            if ( !string.IsNullOrEmpty( StartTimeZone ) || !string.IsNullOrEmpty( other.StartTimeZone ) )
+                if ( !IgnoreNullEquals( StartTimeZone, other.StartTimeZone ) )
+                    Changes |= CalendarItemChanges.StartTimeZone;
+
+            if ( !string.IsNullOrEmpty( EndTimeZone ) || !string.IsNullOrEmpty( other.EndTimeZone ) )
+                if ( !IgnoreNullEquals( EndTimeZone, other.EndTimeZone ) )
+                    Changes |= CalendarItemChanges.EndTimeZone;
+
+            if ( ReminderTime >= 0 && other.ReminderTime >= 0 )
+                if ( ReminderTime != 1080 || other.ReminderTime != 1080 )
+                    if ( ReminderTime != other.ReminderTime )
+                        Changes |= CalendarItemChanges.ReminderTime;
+
+            if ( Attendees.Count > 0 && other.Attendees.Count > 0 )
+                if ( !Attendees.All( other.Attendees.Contains ) )
+                    Changes |= CalendarItemChanges.Attendees;
+
+            if ( Recurrence != null && other.Recurrence != null )
+            {
+                if ( Recurrence.Equals( other.Recurrence ) )
+                    Changes |= CalendarItemChanges.Recurrence;
+            }
+            else if ( Recurrence != null || other.Recurrence != null )
+                Changes |= CalendarItemChanges.Recurrence;
+
+            other.Changes = Changes;
         }
 
         /// <summary>

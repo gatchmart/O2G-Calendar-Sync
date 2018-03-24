@@ -42,7 +42,7 @@ namespace Outlook_Calendar_Sync {
 
         private void ThisAddIn_Quit()
         {
-            m_scheduler.AbortThread();
+            m_scheduler.KillThread();
             m_scheduler.Save( false );
             Archiver.Instance.Save();
 
@@ -63,22 +63,32 @@ namespace Outlook_Calendar_Sync {
 
         private void GetFolders( Outlook.Folder folder )
         {
-            foreach ( Outlook.Folder child in folder.Folders )
+            try
             {
-                if ( child.DefaultItemType == Outlook.OlItemType.olAppointmentItem )
+                if ( folder.Name.ToUpper().Equals( "ARCHIVES" ) )
+                    return;
+
+                foreach ( Outlook.Folder child in folder.Folders )
                 {
-                    var items = child.Items;
-                    m_folders.Add( child );
-                    m_items.Add( items );
-                    items.ItemChange += Outlook_ItemChange;
-                    items.ItemAdd += Outlook_ItemAdd;
-                    items.ItemRemove += Outlook_ItemRemove;
+                    if ( child.DefaultItemType == Outlook.OlItemType.olAppointmentItem )
+                    {
+                        var items = child.Items;
+                        m_folders.Add( child );
+                        m_items.Add( items );
+                        items.ItemChange += Outlook_ItemChange;
+                        items.ItemAdd += Outlook_ItemAdd;
+                        items.ItemRemove += Outlook_ItemRemove;
 
-                    Log.Write( $"Added EventHandlers for the {child.Name} folder." );
+                        Log.Write( $"Added EventHandlers for the {child.Name} folder." );
 
-                    if ( child.Folders.Count != 0 )
-                        GetFolders( child );
+                        if ( child.Folders.Count != 0 )
+                            GetFolders( child );
+                    }
                 }
+            }
+            catch ( COMException ex )
+            {
+                Log.Write( ex );
             }
         }
 
