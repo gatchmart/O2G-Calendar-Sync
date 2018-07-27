@@ -77,7 +77,7 @@ namespace Outlook_Calendar_Sync {
         /// <param name="start">The start date of the restriction</param>
         /// <param name="end">The end date of the restriction</param>
         /// <returns>A list of calendar items that need to be updated or added.</returns>
-        public List<CalendarItem> GetFinalList(bool byDate = false, DateTime start = default( DateTime ), DateTime end = default( DateTime )) {
+        public List<CalendarItem> GetFinalList(bool byDate = false, DateTime start = default( DateTime ), DateTime end = default( DateTime ), bool forceContentsEqual = false ) {
             List<CalendarItem> outlookList;
             List<CalendarItem> googleList;
 
@@ -113,7 +113,7 @@ namespace Outlook_Calendar_Sync {
             }
 
             // Check to see what events need to be added to google from outlook
-            var finalList = CompareLists( outlookList, googleList );
+            var finalList = CompareLists( outlookList, googleList, forceContentsEqual );
 
 #if DEBUG
             WriteToLog( outlookList, "Outlook List Log.rtf" );
@@ -129,15 +129,17 @@ namespace Outlook_Calendar_Sync {
         /// <param name="outlookList">The outlook list</param>
         /// <param name="googleList">The google list</param>
         /// <returns>A list of calendar items with the appropriate changes specified.</returns>
-        private List<CalendarItem> CompareLists( List<CalendarItem> outlookList, List<CalendarItem> googleList )
+        private List<CalendarItem> CompareLists( List<CalendarItem> outlookList, List<CalendarItem> googleList, bool forceContentsEqual = false )
         {
             var finalList = new List<CalendarItem>();
 
             foreach ( var calendarItem in outlookList )
             {
+
                 // Check to see if Item is not in google list
                 if ( !googleList.Contains( calendarItem ) )
                 {
+                    
                     // It's not, check the archiver. Maybe it was deleted in google.
                     if ( m_archiver.Contains( calendarItem.CalendarItemIdentifier ) )
                     {
@@ -174,11 +176,9 @@ namespace Outlook_Calendar_Sync {
                 { // It is in googles list. Find them differences.
 
                     var item = googleList.Find( x => x.CalendarItemIdentifier.GoogleId.Equals( calendarItem.CalendarItemIdentifier.GoogleId ) );
-                    // This forces the item to check for differences
-                    item.Action |= CalendarItemAction.ContentsEqual;
 
                     // Get the differences
-                    if ( !item.Equals( calendarItem ) )
+                    if ( !item.IsContentsEqual( calendarItem ) )
                     {
                         // Should we do the same action to every calendar item?
                         if ( PerformActionToAll )
@@ -349,16 +349,18 @@ namespace Outlook_Calendar_Sync {
         /// <param name="pair">The pair to sync</param>
         /// <param name="precedence">The precendence used when performing silent syncing</param>
         /// <param name="silentSync">Perform a silent sync?</param>
-        public void SynchornizePairs( SyncPair pair, Precedence precedence = Precedence.None, bool silentSync = false )
+        public SyncerResult SynchornizePairs( SyncPair pair, Precedence precedence = Precedence.None, bool silentSync = false )
         {
             m_precedence = precedence;
             m_silentSync = silentSync;
 
-            SynchornizePairs( new List<SyncPair> { pair }, new BackgroundWorker());
+            var result = SynchornizePairs( new List<SyncPair> { pair }, new BackgroundWorker());
 
             m_silentSync = false;
             m_precedence = Precedence.None;
             PerformActionToAll = false;
+
+            return result;
         }
 
         /// <summary>
@@ -366,8 +368,10 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         /// <param name="pairs">The list of pairs to sync</param>
         /// <param name="worker">A background work used to perform the sync</param>
-        public void SynchornizePairs( List<SyncPair> pairs, BackgroundWorker worker )
+        public SyncerResult SynchornizePairs( List<SyncPair> pairs, BackgroundWorker worker )
         {
+            var currentSync = 0;
+
             StatusUpdate?.Invoke( "- Starting Sync" );
 
             float count = 0;
@@ -398,6 +402,8 @@ namespace Outlook_Calendar_Sync {
                     {
                         SubmitChanges( finalList, worker, progress );
                     }
+
+                    currentSync++;
                 }
                 else
                 {
@@ -421,6 +427,9 @@ namespace Outlook_Calendar_Sync {
                 worker.ReportProgress( 100 );
 
             StatusUpdate?.Invoke( "- Sync has been completed." );
+
+            return currentSync == 0 ? SyncerResult.NoDifferences :
+                currentSync == 1 ? SyncerResult.SingleSync : SyncerResult.MultiSync;
         }
 
         /// <summary>

@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace Outlook_Calendar_Sync {
     public class Log : IDisposable
     {
+#if DEBUG
+        public static Log Instance => _instance ?? ( _instance = new Log() );
+        public static EventHandler<string> RefreshStream;
+        public readonly StringBuilder m_builder;
+#else
         protected static Log Instance => _instance ?? ( _instance = new Log() );
+#endif
         private static Log _instance;
 
         private readonly string m_logFilePath =
@@ -15,10 +22,6 @@ namespace Outlook_Calendar_Sync {
         private readonly StreamWriter m_writer;
 
         public static string CurrentFileName;
-
-#if DEBUG
-        public static EventHandler<string> RefreshStream;
-#endif
 
         public Log()
         {
@@ -31,7 +34,9 @@ namespace Outlook_Calendar_Sync {
             CurrentFileName = m_logFilePath + "Log - " + DateTime.Now.ToString( "yyyy-MM-dd HHmm" ) + ".txt";
 
             m_writer = new StreamWriter( CurrentFileName, false );
-
+#if DEBUG
+            m_builder = new StringBuilder();
+#endif
         }
 
         private void ClearOldLogs()
@@ -63,9 +68,10 @@ namespace Outlook_Calendar_Sync {
             {
 #if DEBUG
                 Debug.WriteLine( str );
-                RefreshStream?.Invoke( this, DateTime.Now.ToShortTimeString() + " - " + str + "\n" );
+                m_builder.AppendLine( DateTime.Now.ToString( "G" ) + " - " + str );
+                RefreshStream?.Invoke( this, m_builder.ToString() );
 #endif
-                m_writer.WriteLine( DateTime.Now.ToShortTimeString() + " - " + str );
+                m_writer.WriteLine( DateTime.Now.ToString("G") + " - " + str );
                 m_writer.Flush();
 
                 return true;
@@ -82,9 +88,10 @@ namespace Outlook_Calendar_Sync {
             {
 #if DEBUG
                 Debug.WriteLine( ex );
-                RefreshStream?.Invoke( this, DateTime.Now.ToShortTimeString() + " - " + ex + "\n" );
+                m_builder.AppendLine( DateTime.Now.ToString( "G" ) + " - " + ex );
+                RefreshStream?.Invoke( this, m_builder.ToString() );
 #endif
-                m_writer.WriteLine( DateTime.Now.ToShortTimeString() + " - " + ex );
+                m_writer.WriteLine( DateTime.Now.ToString( "G" ) + " - " + ex );
                 m_writer.Flush();
 
                 return true;

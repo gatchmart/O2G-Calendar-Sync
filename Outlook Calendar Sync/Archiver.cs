@@ -37,6 +37,15 @@ namespace Outlook_Calendar_Sync {
 
             if ( File.Exists( m_filePath ) )
             {
+                if ( File.Exists( m_filePath + ".bak" ) )
+                {
+                    File.Delete( m_filePath + ".bak" );
+                    Log.Write( "Deleted the old Archiver backup" );
+                }
+
+                File.Copy( m_filePath, m_filePath + ".bak" );
+                Log.Write( "Created backup of Archiver Data" );
+
                 Log.Write( "Starting loading Archiver data file..." );
                 var serializer = new XmlSerializer( typeof( SerializableDictionary<SyncPair, List<Identifier>> ) );
                 var reader = new FileStream( m_filePath, FileMode.Open );

@@ -114,15 +114,23 @@ namespace Outlook_Calendar_Sync {
 
         #endregion BackgroundWorker Methods
 
-        private void button1_Click( object sender, EventArgs e ) {
-            var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
+        private void button1_Click( object sender, EventArgs e )
+        {
 
-            if ( File.Exists( path ) )
-                File.Delete( path );
+            var str1 = "Hello";
+            var str2 = "Hello";
 
-            Settings.Default.IsInitialLoad = true;
-            Settings.Default.Save();
-            MessageBox.Show( this, "Reset Initial Load", "Reset", MessageBoxButtons.OK );
+            var hash1 = EventHasher.GetHash( str1 );
+            var hash2 = EventHasher.GetHash( str2 );
+
+            //var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
+
+            //if ( File.Exists( path ) )
+            //    File.Delete( path );
+
+            //Settings.Default.IsInitialLoad = true;
+            //Settings.Default.Save();
+            //MessageBox.Show( this, "Reset Initial Load", "Reset", MessageBoxButtons.OK );
         }
 
 

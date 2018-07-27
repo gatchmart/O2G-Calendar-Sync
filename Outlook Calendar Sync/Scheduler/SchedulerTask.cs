@@ -25,6 +25,11 @@ namespace Outlook_Calendar_Sync.Scheduler {
         public DateTime LastRunTime;
 
         /// <summary>
+        /// This is the next run time for the task. This is in minutes
+        /// </summary>
+        public int NextRunTime;
+
+        /// <summary>
         /// Allows you to set which calendar takes precedence over the other.
         /// This comes in handy if you want a silent sync.
         /// </summary>
@@ -36,17 +41,31 @@ namespace Outlook_Calendar_Sync.Scheduler {
         /// </summary>
         public bool SilentSync;
 
+        private const int Max_Delay = 10;
+
         public SchedulerTask() {
             Pair = null;
             Event = SchedulerEvent.Manually;
             TimeSpan = 0;
             LastRunTime = DateTime.MinValue;
+            NextRunTime = 1;
             Precedence = Precedence.None;
             SilentSync = false;
         }
 
         public override string ToString() {
             return string.Format( "{0} <=> {1}", Pair.GoogleName, Pair.OutlookName );
+        }
+
+        public void IncreaseDelay()
+        {
+            if ( NextRunTime < Max_Delay )
+                NextRunTime += 1;
+        }
+
+        public void ResetDelay()
+        {
+            NextRunTime = 1;
         }
     }
 }

@@ -91,5 +91,15 @@ namespace Outlook_Calendar_Sync {
         private void CompareForm_Load( object sender, EventArgs e ) {
             
         }
+
+        private void listView1_MouseDoubleClick( object sender, MouseEventArgs e )
+        {
+            foreach ( int listView1SelectedIndex in listView1.SelectedIndices )
+            {
+                var form = new DetailsForm();
+                form.SetData( m_data[listView1SelectedIndex].ToString() );
+                form.Show( this );
+            }
+        }
     }
 }

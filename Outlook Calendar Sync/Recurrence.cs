@@ -259,31 +259,31 @@ namespace Outlook_Calendar_Sync {
             Type = (RecurrenceType)pattern.RecurrenceType;
         }
 
-        public void GetOutlookPattern( ref RecurrencePattern pattern ) {
+        public void GetOutlookPattern( ref RecurrencePattern pattern, bool isAllDay ) {
             switch ( Type ) {
                 case RecurrenceType.Daily:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursDaily;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     break;
                 case RecurrenceType.Weekly:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursWeekly;
                     pattern.DayOfWeekMask = (OlDaysOfWeek) DaysOfTheWeekMask;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     break;
                 case RecurrenceType.Monthly:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursMonthly;
                     if ( DayOfMonth != 0 )
                         pattern.DayOfMonth = DayOfMonth;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     break;
                 case RecurrenceType.MonthNth:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursMonthNth;
                     pattern.DayOfWeekMask = (OlDaysOfWeek)DaysOfTheWeekMask;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     if ( Instance != 0 )
                         pattern.Instance = Instance;
                     break;
@@ -294,13 +294,13 @@ namespace Outlook_Calendar_Sync {
                     if ( MonthOfYear != 0 )
                         pattern.MonthOfYear = MonthOfYear;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     break;
                 case RecurrenceType.YearNth:
                     pattern.RecurrenceType = OlRecurrenceType.olRecursYearNth;
                     pattern.DayOfWeekMask = (OlDaysOfWeek)DaysOfTheWeekMask;
 
-                    AddOutlookRecurrenceData( ref pattern );
+                    AddOutlookRecurrenceData( ref pattern, isAllDay );
                     if ( Instance != 0 )
                         pattern.Instance = Instance;
                     break;
@@ -456,6 +456,57 @@ namespace Outlook_Calendar_Sync {
             return builder.ToString();
         }
 
+        public string GetHasherString()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append( "Pattern Start Date: " + PatternStartDate );
+            builder.Append( "Pattern End Date: " + PatternEndDate );
+            builder.Append( "Duration: " + Duration );
+            builder.Append( "Occurrences: " + Occurrences );
+            builder.Append( "Interval: " + Interval );
+            builder.Append( "Instance: " + Instance );
+            builder.Append( "Start Time: " + StartTime );
+            builder.Append( "End Time: " + EndTime );
+            builder.Append( "Month of Year: " + MonthOfYear );
+            builder.Append( "Day of Month: " + DayOfMonth );
+            builder.Append( "No End Date: " + ( NoEndDate ? "Yes" : "No" ) );
+
+            if ( Type == RecurrenceType.Daily )
+                builder.Append( "Daily Recurrence" );
+            else if ( Type == RecurrenceType.MonthNth )
+                builder.Append( "MonthNth Recurrence" );
+            else if ( Type == RecurrenceType.Monthly )
+                builder.Append( "Monthly Recurrence" );
+            else if ( Type == RecurrenceType.Weekly )
+                builder.Append( "Weekly Recurrence" );
+            else if ( Type == RecurrenceType.YearNth )
+                builder.Append( "YearNth Recurrence" );
+            else if ( Type == RecurrenceType.Yearly )
+                builder.Append( "Yearly Recurrence" );
+
+            if ( DaysOfTheWeekMask != 0 )
+            {
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Monday ) )
+                    builder.Append( "Monday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Tuesday ) )
+                    builder.Append( "Tuesday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Wednesday ) )
+                    builder.Append( "Wednesday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Thursday ) )
+                    builder.Append( "Thursday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Friday ) )
+                    builder.Append( "Friday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Saturday ) )
+                    builder.Append( "Saturday | " );
+                if ( DaysOfTheWeekMask.HasFlag( DaysOfWeek.Sunday ) )
+                    builder.Append( "Sunday | " );
+                builder.Remove( builder.Length - 2, 2 );
+            }
+
+            return builder.ToString();
+        }
+
         public bool Equals( Recurrence other ) {
             bool result = true;
 
@@ -484,8 +535,8 @@ namespace Outlook_Calendar_Sync {
             return result;
         }
 
-        private void AddOutlookRecurrenceData( ref RecurrencePattern pattern ) {
-            pattern.Duration = Duration;
+        private void AddOutlookRecurrenceData( ref RecurrencePattern pattern, bool isAllDay ) {
+            pattern.Duration = isAllDay ? 1440 : Duration;
 
             if ( EndTime != null )
                 pattern.EndTime = DateTime.Parse( EndTime );
