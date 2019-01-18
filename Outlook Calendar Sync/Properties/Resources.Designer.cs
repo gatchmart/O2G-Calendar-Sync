@@ -83,6 +83,16 @@ namespace Outlook_Calendar_Sync.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap question_mark_button {
+            get {
+                object obj = ResourceManager.GetObject("question_mark_button", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap synchronization_arrows {
             get {
                 object obj = ResourceManager.GetObject("synchronization_arrows", resourceCulture);
