@@ -227,6 +227,11 @@ namespace Outlook_Calendar_Sync {
                 PatternStartDate = startDate.ToString( "yyyy-MM-dd" );
                 StartTime = startDate.ToString( "HH:mm:sszzz" );
 
+                if ( Type == RecurrenceType.Weekly && DaysOfTheWeekMask == 0 )
+                {
+                    DaysOfTheWeekMask = (DaysOfWeek) ( 1 << (int) startDate.DayOfWeek );
+                }
+
                 // If there is no specified end date set NoEndDate to true
                 if ( string.IsNullOrEmpty( PatternEndDate ) )
                     NoEndDate = true;

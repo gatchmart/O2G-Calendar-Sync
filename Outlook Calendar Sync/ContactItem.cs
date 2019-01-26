@@ -45,7 +45,7 @@ namespace Outlook_Calendar_Sync {
                     .olFolderContacts );
             Outlook.Items contactItems = contactFolder.Items;
 
-            Outlook.ContactItem contact = (Outlook.ContactItem) contactItems.Find( $"[FirstName]={name}" );
+            Outlook.ContactItem contact = (Outlook.ContactItem) contactItems.Find( $"[FirstName]='{name}' OR [Email1Address]='{name}'" );
 
             if ( contact == null )
                 return null;

@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
+using System.Data.SQLite;
 
 namespace Outlook_Calendar_Sync {
 
     internal class Archiver {
 
         private readonly string m_filePath = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
+
+        private readonly string m_path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\Archive.db";
+        //private readonly string m_connectionString = $"Data Source=;Version=3;", m_path);
 
         public static Archiver Instance => _instance ?? ( _instance = new Archiver() );
 
@@ -19,6 +24,32 @@ namespace Outlook_Calendar_Sync {
         private SerializableDictionary<SyncPair, List<Identifier>> m_data;
 
         public Archiver() {
+
+            //if ( !File.Exists( m_path ) )
+            //{
+            //    using ( var connection = new SQLiteConnection( $"Data Source={m_path};Version=3" ) )
+            //    {
+            //        connection.Open();
+
+            //        var pair = "PRAGMA foreign_keys = off; BEGIN TRANSACTION;" +
+            //                   "CREATE TABLE SyncPairs( Id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, GoogleName STRING (1, 160) NOT NULL, GoogleId STRING( 1, 160 ) NOT NULL, OutlookName STRING( 1, 160 ) NOT NULL, " +
+            //                   "OutlookId STRING( 1, 160 ) NOT NULL); COMMIT TRANSACTION; PRAGMA foreign_keys = on;";
+
+            //        var sel = "PRAGMA foreign_keys = off;BEGIN TRANSACTION; " +
+            //                  "CREATE TABLE Identifiers( SyncPair INTEGER REFERENCES SyncPairs (Id) ON DELETE CASCADE NOT NULL, GoogleId STRING (160), GoogleICalUId STRING(160), " +
+            //                  "OutlookEntryId STRING(140), OutlookGlobalId STRING(112), EventHash STRING(64));" +
+            //                  "COMMIT TRANSACTION;PRAGMA foreign_keys = on;";
+
+            //        var cmd = new SQLiteCommand( pair, connection );
+            //        cmd.ExecuteNonQuery();
+
+            //        cmd.CommandText = sel;
+            //        cmd.ExecuteNonQuery();
+
+            //        connection.Close();
+            //    }
+            //}
+
             Load();
         }
 
@@ -27,7 +58,6 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public void Load()
         {
-            
             if ( !Directory.Exists( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" ) )
             {
                 Directory.CreateDirectory( Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
@@ -71,6 +101,7 @@ namespace Outlook_Calendar_Sync {
 
         public void Save()
         {
+
             if ( m_data != null && m_data.Count > 0 )
             {
                 Log.Write( "Writing to Archiver data file..." );
@@ -79,6 +110,26 @@ namespace Outlook_Calendar_Sync {
                 var writer = new StreamWriter( m_filePath );
                 serializer.Serialize( writer, m_data );
                 writer.Close();
+
+                //using ( var db = new SQLiteConnection( $"Data Source={m_path};Version=3" ) )
+                //{
+                //    db.Open();
+                //    foreach ( var pairs in m_data )
+                //    {
+                //        var cmd = new SQLiteCommand( $"SELECT Id FROM SyncPairs WHERE GoogleName='{pairs.Key.GoogleName}' AND GoogleId='{pairs.Key.GoogleId}' AND OutlookName='{pairs.Key.OutlookName}' AND OutlookId='{pairs.Key.OutlookId}';", db);
+                //        var id = cmd.ExecuteScalar().ToString();
+
+                //        if ( string.IsNullOrEmpty( id ) )
+                //        {
+                //            cmd.CommandText =
+                //                "INSERT INTO SyncPairs (GoogleName, GoogleId, OutlookName, OutlookId) VALUES(@GoogleName, @GoogleId, @OutlookName, @OutlookId); ";
+                //            cmd.Parameters.Add( "@GoogleName", DbType.String, 160 ).Value = pairs.Key.GoogleName;
+                //            cmd.ExecuteNonQuery();
+                //        }
+
+                //    }
+                //    db.Close();
+                //}
 
                 Log.Write( "Finished writing Archiver data file." );
             }

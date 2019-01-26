@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
+using Microsoft.Office.Interop.Outlook;
+using Outlook_Calendar_Sync.Properties;
+using RestSharp;
+using Exception = System.Exception;
 
 namespace Outlook_Calendar_Sync {
     public class Log : IDisposable
@@ -62,6 +67,11 @@ namespace Outlook_Calendar_Sync {
             return Instance.WriteLn( ex );
         }
 
+        public static bool Write( Exception ex, CalendarItem item )
+        {
+            return Instance.WriteLn( ex, item );
+        }
+
         private bool WriteLn( string str )
         {
             try
@@ -94,8 +104,81 @@ namespace Outlook_Calendar_Sync {
                 m_writer.WriteLine( DateTime.Now.ToString( "G" ) + " - " + ex );
                 m_writer.Flush();
 
+                var client = new RestClient("http://webapi.gamsapps.com");
+                var request = new RestRequest("api/Issues/FromForm", Method.POST);
+                var builder = new StringBuilder();
+                var exeAss = Assembly.GetExecutingAssembly();
+
+                builder.AppendLine("## Exception:");
+                builder.AppendLine("**Version:** " + exeAss.GetName().Version);
+                builder.AppendLine("**Message:** " + ex.Message);
+                builder.AppendLine("**Source:** " + ex.Source);
+                builder.AppendLine("**Target Site:** " + ex.TargetSite);
+                builder.AppendLine("**Stack Trace:** ```" + ex.StackTrace + "```");
+
+                request.AddParameter("summary", "O2G Calendar Sync Exception");
+                request.AddParameter("dateOfDiscovery", DateTime.Now.ToString("G"));
+                request.AddParameter("application", "O2G Calendar Sync");
+                request.AddParameter("details", builder.ToString());
+                request.AddParameter("category", 2);
+
+                IRestResponse response = client.Execute(request);
+                var code = response.StatusCode;
+
                 return true;
             } catch ( Exception e )
+            {
+                Debug.Write( e );
+            }
+
+            return false;
+        }
+
+        private bool WriteLn( Exception ex, CalendarItem item )
+        {
+            try
+            {
+#if DEBUG
+                Debug.WriteLine( ex );
+                m_builder.AppendLine( DateTime.Now.ToString( "G" ) + " - " + ex );
+                m_builder.AppendLine( DateTime.Now.ToString( "G" ) + " - " + $"Calendar Item: {item}" );
+
+                RefreshStream?.Invoke( this, m_builder.ToString() );
+#endif
+                m_writer.WriteLine( DateTime.Now.ToString( "G" ) + " - " + ex );
+                m_writer.WriteLine( DateTime.Now.ToString( "G" ) + " - " + $"Calendar Item: {item}" );
+                m_writer.Flush();
+
+                var client = new RestClient("http://webapi.gamsapps.com");
+                var request = new RestRequest("api/Issues/FromForm", Method.POST);
+                var builder = new StringBuilder();
+                var exeAss = Assembly.GetExecutingAssembly();
+
+                builder.AppendLine( "## Exception:" );
+                builder.AppendLine( "**Version:** " + exeAss.GetName().Version );
+                builder.AppendLine( "**Message:** " + ex.Message );
+                builder.AppendLine( "**Source:** " + ex.Source );
+                builder.AppendLine( "**Target Site:** " + ex.TargetSite );
+                builder.AppendLine( "**Stack Trace:**" );
+                builder.AppendLine( "```\n\r" + ex.StackTrace + "\n\r```" );
+
+#if DEBUG
+                builder.AppendLine("\n\r##Calendar Item:");
+                builder.AppendLine(item.ToString());
+#endif
+
+                request.AddParameter("summary", "O2G Calendar Sync Exception");
+                request.AddParameter("dateOfDiscovery", DateTime.Now.ToString("G"));
+                request.AddParameter("application", "O2G Calendar Sync");
+                request.AddParameter("details", builder.ToString());
+                request.AddParameter("category", 2);
+
+                IRestResponse response = client.Execute( request );
+                var code = response.StatusCode;
+
+                return true;
+            }
+            catch ( Exception e )
             {
                 Debug.Write( e );
             }

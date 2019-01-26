@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Google;
 using Google.Apis.Calendar.v3.Data;
@@ -11,6 +13,8 @@ using Settings = Outlook_Calendar_Sync.Properties.Settings;
 namespace Outlook_Calendar_Sync {
     public partial class InitialLoadForm : Form {
         private delegate void SetProgressCallback( int progress );
+
+        private delegate void SetStatusCallback( string text );
 
         private CalendarList m_googleFolders;
         private readonly Syncer m_syncer;
@@ -181,7 +185,7 @@ namespace Outlook_Calendar_Sync {
             // Tell the Scheduler to ingore all up coming add events during the inital load
             Scheduler.Scheduler.Instance.IsPerformingInitialLoad = true;
 
-            Syncer.Instance.StatusUpdate = SetStatus;
+            Syncer.Instance.StatusUpdate += SetStatus;
 
             if ( m_multiThreaded ) {
                 Cancel_BTN.Enabled = true;
@@ -216,9 +220,14 @@ namespace Outlook_Calendar_Sync {
 
         #region BackgroundWorker Methods
 
-        private void InitialSyncer_BW_DoWork( object sender, System.ComponentModel.DoWorkEventArgs e ) {
-            List<SyncPair> list = (List<SyncPair>) e.Argument;
-            m_syncer.SynchornizePairs( list, InitialSyncer_BW );
+        private void InitialSyncer_BW_DoWork( object sender, System.ComponentModel.DoWorkEventArgs e )
+        {
+            if ( e.Argument.GetType() == typeof( ListBox.ObjectCollection ) )
+            {
+                var args = (ListBox.ObjectCollection) e.Argument;
+                var list = args.Cast<SyncPair>().ToList();
+                m_syncer.SynchornizePairs( list, InitialSyncer_BW );
+            }
         }
 
         private void InitialSyncer_BW_ProgressChanged( object sender,
@@ -237,7 +246,7 @@ namespace Outlook_Calendar_Sync {
             // If these threads are different, it returns true.
             if ( progressBar1.InvokeRequired ) {
                 var d = new SetProgressCallback( SetProgress );
-                Invoke( d, new[] {progress} );
+                Invoke( d, new object[] {progress} );
             } else {
                 progressBar1.Value = progress;
             }
@@ -250,12 +259,28 @@ namespace Outlook_Calendar_Sync {
             Settings.Default.IsInitialLoad = false;
             Settings.Default.Save();
             Scheduler.Scheduler.Instance.ActivateThread();
+
+            var path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) +
+                       "\\OutlookGoogleSync\\initialStartup.ini";
+            var writer = File.CreateText( path );
+            writer.Write( "Initial Load Complete" );
+            writer.Close();
+
             Close();
         }
 
         private void SetStatus( string text ) {
-            Status_TB.AppendText( text + "\n" );
-            Status_TB.ScrollToCaret();
+            if ( Status_TB.InvokeRequired )
+            {
+                var d = new SetStatusCallback(SetStatus);
+                Invoke( d, new object[] { text } );
+            }
+            else
+            {
+                this.Status_TB.AppendText( text + "\n" );
+                this.Status_TB.ScrollToCaret();
+            }
+            
         }
     }
 }

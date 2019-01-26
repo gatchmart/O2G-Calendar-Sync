@@ -178,7 +178,7 @@ namespace Outlook_Calendar_Sync {
                     var item = googleList.Find( x => x.CalendarItemIdentifier.GoogleId.Equals( calendarItem.CalendarItemIdentifier.GoogleId ) );
 
                     // Get the differences
-                    if ( !item.IsContentsEqual( calendarItem ) )
+                    if ( item != null && !item.IsContentsEqual( calendarItem ) )
                     {
                         // Should we do the same action to every calendar item?
                         if ( PerformActionToAll )
