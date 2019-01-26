@@ -2,6 +2,7 @@
 Outlook Calendar Sync/[Bb]bin/*
 Outlook Calendar Sync/[Oo]bj/*
 /*.user
+*.DotSettings.user
 
 
 client_secret.json
@@ -9,3 +10,4 @@ client_secret.json
 /Outlook Calendar Sync/bin/Debug
 /Outlook Calendar Sync/bin/Release
 /Outlook Calendar Sync/publish
+packages/*
