@@ -30,23 +30,23 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <DefineConstants>VSTO40</DefineConstants>
     <IsWebBootstrapper>False</IsWebBootstrapper>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <PublishUrl>publish\</PublishUrl>
     <InstallUrl />
     <TargetCulture>en</TargetCulture>
-    <ApplicationVersion>1.1.0.2</ApplicationVersion>
+    <ApplicationVersion>1.1.0.3</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>days</UpdateIntervalUnits>
     <ProductName>O2G Calendar Sync</ProductName>
     <PublisherName>GAM%27s Apps</PublisherName>
-    <SupportUrl />
+    <SupportUrl>https://www.gamsapps.com/support</SupportUrl>
     <FriendlyName>O2G Calendar Sync</FriendlyName>
     <OfficeApplicationDescription />
     <LoadBehavior>3</LoadBehavior>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
   </PropertyGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
@@ -310,7 +310,7 @@
     <Compile Include="Syncer.cs" />
     <Compile Include="SyncPair.cs" />
     <Compile Include="TimeZoneConverter.cs" />
-    <None Include="O2GKey.pfx" />
+    <None Include="CodeSigning.pfx" />
     <None Include="Outlook Calendar Sync_TemporaryKey.pfx" />
     <None Include="Resources\Archive.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -409,10 +409,10 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>Outlook Calendar Sync_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>CodeSigning.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>C7C72D7B85214753A7C5A751EBDA47E95689FBF9</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>D440A824262A5A1CE4363687E39749D5432E2270</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>

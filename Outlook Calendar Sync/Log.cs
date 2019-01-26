@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
+using Microsoft.Office.Interop.Outlook;
+using Outlook_Calendar_Sync.Properties;
 using RestSharp;
+using Exception = System.Exception;
 
 namespace Outlook_Calendar_Sync {
     public class Log : IDisposable
@@ -103,12 +107,14 @@ namespace Outlook_Calendar_Sync {
                 var client = new RestClient("http://webapi.gamsapps.com");
                 var request = new RestRequest("api/Issues/FromForm", Method.POST);
                 var builder = new StringBuilder();
+                var exeAss = Assembly.GetExecutingAssembly();
 
                 builder.AppendLine("## Exception:");
-                builder.AppendLine("> **Message:** " + ex.Message);
-                builder.AppendLine("> **Source:** " + ex.Source);
-                builder.AppendLine("> **Target Site:** " + ex.TargetSite);
-                builder.AppendLine("> **Stack Trace:** " + ex.StackTrace);
+                builder.AppendLine("**Version:** " + exeAss.GetName().Version);
+                builder.AppendLine("**Message:** " + ex.Message);
+                builder.AppendLine("**Source:** " + ex.Source);
+                builder.AppendLine("**Target Site:** " + ex.TargetSite);
+                builder.AppendLine("**Stack Trace:** ```" + ex.StackTrace + "```");
 
                 request.AddParameter("summary", "O2G Calendar Sync Exception");
                 request.AddParameter("dateOfDiscovery", DateTime.Now.ToString("G"));
@@ -146,12 +152,14 @@ namespace Outlook_Calendar_Sync {
                 var client = new RestClient("http://webapi.gamsapps.com");
                 var request = new RestRequest("api/Issues/FromForm", Method.POST);
                 var builder = new StringBuilder();
+                var exeAss = Assembly.GetExecutingAssembly();
 
                 builder.AppendLine( "## Exception:" );
-                builder.AppendLine( "> **Message:** " + ex.Message );
-                builder.AppendLine( "> **Source:** " + ex.Source );
-                builder.AppendLine( "> **Target Site:** " + ex.TargetSite );
-                builder.AppendLine( "> **Stack Trace:**" );
+                builder.AppendLine( "**Version:** " + exeAss.GetName().Version );
+                builder.AppendLine( "**Message:** " + ex.Message );
+                builder.AppendLine( "**Source:** " + ex.Source );
+                builder.AppendLine( "**Target Site:** " + ex.TargetSite );
+                builder.AppendLine( "**Stack Trace:**" );
                 builder.AppendLine( "```\n\r" + ex.StackTrace + "\n\r```" );
 
 #if DEBUG
