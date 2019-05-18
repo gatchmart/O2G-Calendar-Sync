@@ -103,6 +103,8 @@ namespace Outlook_Calendar_Sync {
         /// </summary>
         public bool IsAllDayEvent { get; set; }
 
+        public string Status { get; set; }
+
         /// <summary>
         /// Is this instance the first appointment in a recurrance pattern?
         /// </summary>
@@ -133,6 +135,7 @@ namespace Outlook_Calendar_Sync {
             Changes = CalendarItemChanges.Nothing;
             IsAllDayEvent = false;
             CalendarItemIdentifier = new Identifier();
+            Status = "";
         }
 
         /// <summary>
@@ -156,11 +159,8 @@ namespace Outlook_Calendar_Sync {
                 item.StartTimeZone = startTz;
                 item.EndTimeZone = endTz;
 
-                if ( !m_isUsingDefaultReminders )
-                {
-                    item.ReminderMinutesBeforeStart = ReminderTime;
-                    item.ReminderSet = true;
-                }
+                item.ReminderMinutesBeforeStart = ReminderTime;
+                item.ReminderSet = true;
 
                 if ( Recurrence != null )
                 {
@@ -298,6 +298,7 @@ namespace Outlook_Calendar_Sync {
             EndTimeZone = ev.End.TimeZone ?? TimeZoneConverter.WindowsToIana( TimeZoneInfo.Local.Id );
             StartTimeInTimeZone = Start;
             EndTimeInTimeZone = End;
+            Status = ev.Status;
 
             var id = Archiver.Instance.FindIdentifier( ev.Id );
             if ( id == null )
@@ -310,7 +311,7 @@ namespace Outlook_Calendar_Sync {
 
             IsAllDayEvent = ( ev.Start.DateTimeRaw == null && ev.End.DateTimeRaw == null );
 
-            if ( ev.Reminders.Overrides != null )
+            if ( ev.Reminders != null && ev.Reminders.Overrides != null )
             {
                 EventReminder reminder = ev.Reminders.Overrides.FirstOrDefault( x => x.Method == "popup" );
 
@@ -499,6 +500,7 @@ namespace Outlook_Calendar_Sync {
             builder.AppendLine( "\tReminder Time: " + ReminderTime );
             builder.AppendLine( "\tUsing Default Reminder: " + ( m_isUsingDefaultReminders ? "Yes" : "No" ) );
             builder.AppendLine( "\tIs All Day Event: " + ( IsAllDayEvent ? "Yes" : "No" ) );
+            builder.AppendLine("\tGoogle Status: " + Status);
 
             if ( Attendees != null && Attendees.Count > 0 )
             {

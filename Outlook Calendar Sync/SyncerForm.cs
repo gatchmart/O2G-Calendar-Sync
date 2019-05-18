@@ -33,26 +33,37 @@ namespace Outlook_Calendar_Sync {
                 calendarUpdate_WORKER.RunWorkerAsync( list );
             else {
                 m_syncer.SubmitChanges( list, calendarUpdate_WORKER );
+                //Archiver.Instance.CurrentPair = null;
                 MessageBox.Show( "Synchronization has been completed." );
             }
+
         }
 
         private void Sync_BTN_Click( object sender, EventArgs e ) {
 
             // Create the SyncPair
-            var pair = new SyncPair {
-                GoogleName = googleCal_CB.SelectedItem.ToString(),
-                GoogleId = m_googleFolders.Items[googleCal_CB.SelectedIndex].Id,
-                OutlookName = outlookCal_CB.SelectedItem.ToString(),
-                OutlookId = m_outlookFolders[outlookCal_CB.SelectedIndex].EntryID
-            };
+            var googleId = m_googleFolders.Items[googleCal_CB.SelectedIndex].Id;
+            var outlookId = m_outlookFolders[outlookCal_CB.SelectedIndex].EntryID;
+
+            var pair = Archiver.Instance.TryGetSyncPair(googleId, outlookId);
+
+            if (pair == null)
+            {
+                pair = new SyncPair
+                {
+                    GoogleName = googleCal_CB.SelectedItem.ToString(),
+                    GoogleId = googleId,
+                    OutlookName = outlookCal_CB.SelectedItem.ToString(),
+                    OutlookId = outlookId
+                };
+            }
 
             // Set the current outlook working folder to the folder selected by the user.
-            pair.OutlookId = m_outlookFolders.First( x => x.Name  == pair.OutlookName ).EntryID;
+            //pair.OutlookId = m_outlookFolders.First( x => x.Name  == pair.OutlookName ).EntryID;
             OutlookSync.Syncer.SetOutlookWorkingFolder( pair.OutlookId );
 
             // Set the current Google working folder
-            pair.GoogleId = m_googleFolders.Items.First( x => x.Summary.Equals( pair.GoogleName ) ).Id;
+            //pair.GoogleId = m_googleFolders.Items.First( x => x.Summary.Equals( pair.GoogleName ) ).Id;
             GoogleSync.Syncer.SetGoogleWorkingFolder( pair.GoogleId );
 
             Archiver.Instance.CurrentPair = pair;
@@ -97,6 +108,7 @@ namespace Outlook_Calendar_Sync {
         }
 
         private void calendarUpdate_WORKER_RunWorkerCompleted( object sender, System.ComponentModel.RunWorkerCompletedEventArgs e ) {
+            //Archiver.Instance.CurrentPair = null;
             MessageBox.Show( "Synchronization has been completed." );
         }
 

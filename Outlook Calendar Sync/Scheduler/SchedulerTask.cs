@@ -27,7 +27,7 @@ namespace Outlook_Calendar_Sync.Scheduler {
         /// <summary>
         /// This is the next run time for the task. This is in minutes
         /// </summary>
-        public int NextRunTime;
+        public uint NextRunTime;
 
         /// <summary>
         /// Allows you to set which calendar takes precedence over the other.
@@ -48,7 +48,7 @@ namespace Outlook_Calendar_Sync.Scheduler {
             Event = SchedulerEvent.Manually;
             TimeSpan = 0;
             LastRunTime = DateTime.MinValue;
-            NextRunTime = 1;
+            NextRunTime = 500;
             Precedence = Precedence.None;
             SilentSync = false;
         }
@@ -60,12 +60,12 @@ namespace Outlook_Calendar_Sync.Scheduler {
         public void IncreaseDelay()
         {
             if ( NextRunTime < Max_Delay )
-                NextRunTime += 1;
+                NextRunTime += 500;
         }
 
         public void ResetDelay()
         {
-            NextRunTime = 1;
+            NextRunTime = 500;
         }
     }
 }

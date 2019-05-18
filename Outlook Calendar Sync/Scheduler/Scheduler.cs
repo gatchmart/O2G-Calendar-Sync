@@ -82,12 +82,6 @@ namespace Outlook_Calendar_Sync.Scheduler
 
             Load();
 
-            m_thread = new Thread( Tick );
-            m_thread.IsBackground = true;
-
-            if ( m_tasks.Count > 0 )
-                m_thread.Start();
-
             foreach ( var task in m_tasks )
             {
                 if ( task.Event == SchedulerEvent.OnStartup )
@@ -96,6 +90,10 @@ namespace Outlook_Calendar_Sync.Scheduler
                     task.LastRunTime = DateTime.Now;
                 }
             }
+
+            m_thread = new Thread(Tick);
+            m_thread.IsBackground = true;
+            m_thread.Start();
         }
 
         #region List Modifiers
@@ -219,7 +217,12 @@ namespace Outlook_Calendar_Sync.Scheduler
                         {
                             var newId = new Identifier( id.GoogleId, id.GoogleICalUId, aitem.EntryID,
                                 aitem.GlobalAppointmentID, id.EventHash );
+
+                            Archiver.Instance.CurrentPair = id.SyncPair;
+
                             Archiver.Instance.UpdateIdentifier( id, newId );
+
+                            //Archiver.Instance.CurrentPair = null;
                         }
                     }
                 }
@@ -460,7 +463,7 @@ namespace Outlook_Calendar_Sync.Scheduler
                 }
                 else if ( schedulerTask.Event == SchedulerEvent.Automatically )
                 {
-                    if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromMinutes( schedulerTask.NextRunTime ) ) )
+                    if ( schedulerTask.LastRunTime < DateTime.Now.Subtract( TimeSpan.FromMilliseconds( schedulerTask.NextRunTime ) ) )
                     {
                         // There is a problem when using sync tokens. Google will only return new, modified, or deleted events
                         // that happened after the sync token was created.

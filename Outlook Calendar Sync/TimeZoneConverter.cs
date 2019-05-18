@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using NodaTime.TimeZones;
+using NodaTime.Utility;
 
 namespace Outlook_Calendar_Sync {
     internal sealed class TimeZoneConverter {
@@ -37,9 +39,22 @@ namespace Outlook_Calendar_Sync {
             var tzdbSource = NodaTime.TimeZones.TzdbDateTimeZoneSource.Default;
             var tzi = TimeZoneInfo.FindSystemTimeZoneById( windowsZoneId );
             if ( tzi == null ) return null;
-            var tzid = tzdbSource.MapTimeZoneId( tzi );
-            if ( tzid == null ) return null;
-            return tzdbSource.CanonicalIdMap[tzid];
+
+            try
+            {
+                // Get the windows zone information so we can convert it to a iana standard zone
+                var windowsZone = tzdbSource.WindowsMapping.MapZones.FirstOrDefault(x => x.WindowsId.Equals(tzi.Id));
+                if (windowsZone == null) return null;
+
+                var tzid = tzdbSource.ForId(windowsZone.TzdbIds[0]); //tzdbSource.MapTimeZoneId( tzi );
+                return tzdbSource.CanonicalIdMap[tzid.Id];
+            }
+            catch (ArgumentException ex)
+            {
+                Log.Write(ex);
+            }
+
+            return null;
         }
     }
 }

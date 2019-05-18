@@ -248,6 +248,12 @@ namespace Outlook_Calendar_Sync {
                             }
                         }
                     }
+
+                    // Check if the item was deleted from google and just needs to be deleted from outlook
+                    else if (item != null && item.Action.HasFlag(CalendarItemAction.OutlookDelete))
+                    {
+                        finalList.Add(item);
+                    }
                 }
 
             }
@@ -268,7 +274,7 @@ namespace Outlook_Calendar_Sync {
                             calendarItem.Action |= CalendarItemAction.GoogleDelete;
                             finalList.Add( calendarItem );
                         }
-                    } else
+                    } else if ( !calendarItem.Status.Equals( "cancelled" ) )
                     {
                         calendarItem.Action |= CalendarItemAction.OutlookAdd;
                         finalList.Add( calendarItem );
@@ -334,7 +340,7 @@ namespace Outlook_Calendar_Sync {
             }
 
             if ( !m_syncingPairs ) {
-                m_archiver.Save();
+                //m_archiver.Save();
                 if ( worker.WorkerReportsProgress )
                     worker.ReportProgress( 100 );
                 StatusUpdate?.Invoke( "- Sync has been completed." );

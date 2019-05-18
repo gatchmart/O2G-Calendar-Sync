@@ -80,6 +80,7 @@ namespace Outlook_Calendar_Sync {
                         items.ItemChange += Outlook_ItemChange;
                         items.ItemAdd += Outlook_ItemAdd;
                         items.ItemRemove += Outlook_ItemRemove;
+                        
 
                         Log.Write( $"Added EventHandlers for the {child.Name} folder." );
 

@@ -11,6 +11,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
+using Google.Apis.Requests;
 using Google.Apis.Services;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
@@ -388,8 +389,17 @@ namespace Outlook_Calendar_Sync {
                 Archiver.Instance.Delete( id );
             } catch ( GoogleApiException ex )
             {
-                Log.Write( ex );
-                HandleException( ex, "There was an error when trying to delete an event from google.", new CalendarItem{ CalendarItemIdentifier = id }, RetryAction.DeleteById );
+
+                if (ex.Error.Code == 410)
+                {
+                    Log.Write("A Outlook event was deleted from outlook and already deleted from google. Everything is good, just thought you should know.");
+                }
+                else
+                {
+                    Log.Write(ex);
+                    HandleException(ex, "There was an error when trying to delete an event from google.",
+                        new CalendarItem {CalendarItemIdentifier = id}, RetryAction.DeleteById);
+                }
             }
         }
 
@@ -493,16 +503,18 @@ namespace Outlook_Calendar_Sync {
             do
             {
                 list.PageToken = pageToken;
+                list.ShowDeleted = true;
                 events = list.Execute();
                 List<Event> i = events.Items.ToList();
 
                 foreach ( var @event in i )
                 {
-                    if ( @event.Status.Equals( "cancelled" ) )
-                        continue;
-
                     var cal = new CalendarItem();
                     cal.LoadFromGoogleEvent( @event );
+
+                    if (@event.Status.Equals("cancelled"))
+                        cal.Action |= CalendarItemAction.OutlookDelete;
+
                     if ( !items.Exists( x => x.CalendarItemIdentifier.GoogleId.Equals( cal.CalendarItemIdentifier.GoogleId ) ) )
                         items.Add( cal );
                 }

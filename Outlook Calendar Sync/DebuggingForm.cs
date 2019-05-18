@@ -63,6 +63,9 @@ namespace Outlook_Calendar_Sync
 
             foreach ( var file in files )
             {
+                if (file.EndsWith(".db"))
+                    continue;
+                
                 var name = Path.GetFileName( file );
                 m_fileContents.Add( name, File.ReadAllText( file ) );
                 FileSelect_CB.Items.Add( name );
