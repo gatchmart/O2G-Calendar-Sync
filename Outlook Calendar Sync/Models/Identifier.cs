@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Outlook_Calendar_Sync
 {
@@ -16,6 +15,8 @@ namespace Outlook_Calendar_Sync
         public string OutlookGlobalId { get; set; }
         public string EventHash { get; set; }
 
+        public bool Ignore { get; set; }
+
         public SyncPair SyncPair { get; set; }
 
         public Identifier()
@@ -25,6 +26,7 @@ namespace Outlook_Calendar_Sync
             OutlookEntryId = "";
             OutlookGlobalId = "";
             EventHash = "";
+            Ignore = false;
         }
 
         public Identifier( string gid, string guid, string oeid, string osid, string hash = "")

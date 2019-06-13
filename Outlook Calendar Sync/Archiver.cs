@@ -14,7 +14,6 @@ namespace Outlook_Calendar_Sync {
         private readonly string m_filePath = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\" + "calendarItems.xml";
 
         private readonly string m_path = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "\\OutlookGoogleSync\\Archive.db";
-        //private readonly string m_connectionString = $"Data Source={m_path};Version=3;";
 
         public static Archiver Instance => _instance ?? ( _instance = new Archiver() );
 
@@ -51,7 +50,8 @@ namespace Outlook_Calendar_Sync {
                               "GoogleICalUId STRING(160), " +
                               "OutlookEntryId STRING(200), " +
                               "OutlookGlobalId STRING(200), " +
-                              "EventHash STRING(64) " +
+                              "EventHash STRING(64), " +
+                              "[Ignore] BOOLEAN DEFAULT FALSE " +
                               "); COMMIT TRANSACTION;PRAGMA foreign_keys = on;";
 
                     var cmd = new SQLiteCommand(pair, connection);
@@ -90,7 +90,7 @@ namespace Outlook_Calendar_Sync {
                     pair.OutlookName = syncReader.IsDBNull(3) ? "" : syncReader.GetString(3);
                     pair.OutlookId = syncReader.IsDBNull(4) ? "" : syncReader.GetString(4);
 
-                    var cmd = new SQLiteCommand("SELECT Id, GoogleId, GoogleICalUId, OutlookEntryId, OutlookGlobalId, EventHash FROM Identifiers WHERE SyncPair=" + pair.SyncPairId, connection);
+                    var cmd = new SQLiteCommand("SELECT Id, GoogleId, GoogleICalUId, OutlookEntryId, OutlookGlobalId, EventHash, [Ignore] FROM Identifiers WHERE SyncPair=" + pair.SyncPairId, connection);
                     var reader = cmd.ExecuteReader();
                     var identifiers = new List<Identifier>();
 
@@ -104,6 +104,7 @@ namespace Outlook_Calendar_Sync {
                         id.OutlookEntryId = reader.IsDBNull(2) ? "" : reader.GetString(3);
                         id.OutlookGlobalId = reader.IsDBNull(4) ? "" : reader.GetString(4);
                         id.EventHash = reader.IsDBNull(5) ? "" : reader.GetString(5);
+                        id.Ignore = reader.GetBoolean(6);
 
                         id.SyncPair = pair;
 
@@ -281,6 +282,26 @@ namespace Outlook_Calendar_Sync {
                 
         }
 
+        public void Ignore(Identifier id)
+        {
+            if (Contains(id))
+            {
+                m_data[CurrentPair].Find(x => x.Equals(id)).Ignore = true;
+
+                using (var connection = new SQLiteConnection($"Data Source={m_path};Version=3"))
+                {
+                    connection.Open();
+
+                    var cmd = new SQLiteCommand("UPDATE Identifiers SET [Ignore] = '1' WHERE Id = @Id", connection);
+                    cmd.Parameters.Add("@Id", DbType.Int32).Value = id.Id;
+
+                    cmd.ExecuteNonQuery();
+
+                    connection.Close();
+                }
+            }
+        }
+
         public void Delete( Identifier id ) {
             if (Contains(id))
             {
@@ -324,7 +345,7 @@ namespace Outlook_Calendar_Sync {
                         connection.Open();
                         var cmd = new SQLiteCommand(
                             "UPDATE Identifiers SET GoogleId = @GoogleId, GoogleICalUId = @GoogleICalUId, OutlookEntryId = @OutlookEntryId, " +
-                            "OutlookGlobalId = @OutlookGlobalId, EventHash = @EventHash WHERE Id = @Id ", connection);
+                            "OutlookGlobalId = @OutlookGlobalId, EventHash = @EventHash, [Ignore] = @Ignore WHERE Id = @Id ", connection);
 
                         cmd.Parameters.Add("@Id", DbType.Int32).Value = newId.Id;
                         cmd.Parameters.Add("@GoogleId", DbType.String, 160).Value = newId.GoogleId;
@@ -332,6 +353,7 @@ namespace Outlook_Calendar_Sync {
                         cmd.Parameters.Add("@OutlookEntryId", DbType.String, 140).Value = newId.OutlookEntryId;
                         cmd.Parameters.Add("@OutlookGlobalId", DbType.String, 112).Value = newId.OutlookGlobalId;
                         cmd.Parameters.Add("@EventHash", DbType.String, 64).Value = newId.EventHash;
+                        cmd.Parameters.Add("@Ignore", DbType.Boolean).Value = newId.Ignore;
 
                         cmd.ExecuteNonQuery();
 
@@ -344,8 +366,8 @@ namespace Outlook_Calendar_Sync {
                     using (var connection = new SQLiteConnection($"Data Source={m_path};Version=3"))
                     {
                         connection.Open();
-                        var cmd = new SQLiteCommand("INSERT INTO Identifiers (SyncPair, GoogleId, GoogleICalUId, OutlookEntryId, OutlookGlobalId, EventHash ) " +
-                            "VALUES(@SyncPair, @GoogleId, @GoogleICalUId, @OutlookEntryId, @OutlookGlobalId, @EventHash);", connection);
+                        var cmd = new SQLiteCommand("INSERT INTO Identifiers (SyncPair, GoogleId, GoogleICalUId, OutlookEntryId, OutlookGlobalId, EventHash, [Ignore] ) " +
+                            "VALUES(@SyncPair, @GoogleId, @GoogleICalUId, @OutlookEntryId, @OutlookGlobalId, @EventHash, @Ignore);", connection);
                         
                         cmd.Parameters.Add("@SyncPair", DbType.Int32).Value = CurrentPair.SyncPairId;
                         cmd.Parameters.Add("@GoogleId", DbType.String, 160).Value = newId.GoogleId;
@@ -353,6 +375,7 @@ namespace Outlook_Calendar_Sync {
                         cmd.Parameters.Add("@OutlookEntryId", DbType.String, 140).Value = newId.OutlookEntryId;
                         cmd.Parameters.Add("@OutlookGlobalId", DbType.String, 112).Value = newId.OutlookGlobalId;
                         cmd.Parameters.Add("@EventHash", DbType.String, 64).Value = newId.EventHash;
+                        cmd.Parameters.Add("@Ignore", DbType.Boolean).Value = newId.Ignore;
 
                         cmd.ExecuteNonQuery();
                         cmd.CommandText = "SELECT last_insert_rowid()";

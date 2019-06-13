@@ -135,145 +135,38 @@ namespace Outlook_Calendar_Sync {
 
             foreach ( var calendarItem in outlookList )
             {
+                if (calendarItem.CalendarItemIdentifier.Ignore)
+                    continue;
 
                 // Check to see if Item is not in google list
                 if ( !googleList.Contains( calendarItem ) )
                 {
-                    
                     // It's not, check the archiver. Maybe it was deleted in google.
                     if ( m_archiver.Contains( calendarItem.CalendarItemIdentifier ) )
                     {
-                        // It appears to have been deleted in the google cal.
-                        // Do you want to delete it from outlook?
-                        if (
-                            MessageBox.Show(
-                                "It appears the calendar event '" + calendarItem.Subject +
-                                "' was deleted from Google. Would you like to remove it from Outlook also?", "Delete Event?",
-                                MessageBoxButtons.YesNo ) == DialogResult.Yes )
-                        {
-                            // Yes, delete it
-                            calendarItem.Action |= CalendarItemAction.OutlookDelete;
-                            finalList.Add( calendarItem );
-                        }
-                      
+                        HandleCalendarItemDeletion(calendarItem, finalList, CalendarItemAction.OutlookDelete);
                     } else
                     { // It is not it google's list or the archiver, add it to google
-
-                        if ( calendarItem.Recurrence != null )
-                        {
-                            if ( calendarItem.IsFirstOccurence )
-                            {
-                                calendarItem.Action |= CalendarItemAction.GoogleAdd;
-                                finalList.Add( calendarItem );
-                            }
-                        } else
-                        {
-                            calendarItem.Action |= CalendarItemAction.GoogleAdd;
-                            finalList.Add( calendarItem );
-                        }
+                        GoogleAdd(calendarItem, finalList);
                     }
                 } else
-                { // It is in googles list. Find them differences.
-
-                    var item = googleList.Find( x => x.CalendarItemIdentifier.GoogleId.Equals( calendarItem.CalendarItemIdentifier.GoogleId ) );
-
-                    // Get the differences
-                    if ( item != null && !item.IsContentsEqual( calendarItem ) )
-                    {
-                        // Should we do the same action to every calendar item?
-                        if ( PerformActionToAll )
-                        {
-                            // Check and make sure there is an action to perform
-                            if ( Action != CalendarItemAction.Nothing )
-                            {
-                                calendarItem.Action |= Action;
-                                finalList.Add( calendarItem );
-                            }
-                        } else
-                        { // We are not performing the same action to every item, yet.
-
-                            // Are we performing a silentSync?
-                            if ( m_silentSync && m_precedence != Precedence.None )
-                            {
-                                // Yep, setup the action to be performed
-                                PerformActionToAll = true;
-                                Action = m_precedence == Precedence.Outlook
-                                    ? CalendarItemAction.GoogleUpdate
-                                    : CalendarItemAction.OutlookUpdate;
-                            } else
-                            { // No we are not performing a silent sync
-
-                                var result = (DifferencesFormResults)DifferencesForm.Show( calendarItem, item );
-
-                                // Save Outlook Version Once
-                                if ( result == DifferencesFormResults.KeepOutlookSingle )
-                                {
-                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                    finalList.Add( calendarItem );
-
-                                    // Save Outlook Version for All
-                                }
-                                else if ( result == DifferencesFormResults.KeepOutlookAll )
-                                {
-                                    calendarItem.Action |= CalendarItemAction.GoogleUpdate;
-                                    finalList.Add( calendarItem );
-
-                                    Action = CalendarItemAction.GoogleUpdate;
-                                    PerformActionToAll = true;
-
-                                    // Save Google Version Once
-                                }
-                                else if ( result == DifferencesFormResults.KeepGoogleSingle )
-                                {
-                                    item.Action |= CalendarItemAction.OutlookUpdate;
-                                    finalList.Add( item );
-
-                                    // Save Google Version for All
-                                }
-                                else if ( result == DifferencesFormResults.KeepGoogleAll )
-                                {
-                                    item.Action |= CalendarItemAction.OutlookUpdate;
-                                    finalList.Add( item );
-
-                                    Action = CalendarItemAction.OutlookUpdate;
-                                    PerformActionToAll = true;
-
-                                    // Ignore All
-                                }
-                                else if ( result == DifferencesFormResults.IgnoreAll )
-                                {
-                                    PerformActionToAll = true;
-                                    Action = CalendarItemAction.Nothing;
-                                }
-                            }
-                        }
-                    }
-
-                    // Check if the item was deleted from google and just needs to be deleted from outlook
-                    else if (item != null && item.Action.HasFlag(CalendarItemAction.OutlookDelete))
-                    {
-                        finalList.Add(item);
-                    }
+                {
+                    // It is in googles list. Find them differences.
+                    FindItemDifferences(googleList, calendarItem, finalList);
                 }
 
             }
 
             foreach ( var calendarItem in googleList )
             {
+                if (calendarItem.CalendarItemIdentifier.Ignore)
+                    continue;
+
                 if ( !outlookList.Contains( calendarItem ) )
                 {
                     if ( m_archiver.Contains( calendarItem.CalendarItemIdentifier ) )
                     {
-                        if (
-                            MessageBox.Show(
-                                "It appears the calendar event '" + calendarItem.Subject +
-                                "' was deleted from Outlook. Would you like to remove it from Google also?",
-                                "Delete Event?",
-                                MessageBoxButtons.YesNo ) == DialogResult.Yes )
-                        {
-                            calendarItem.Action |= CalendarItemAction.GoogleDelete;
-                            finalList.Add( calendarItem );
-                        }
+                        HandleCalendarItemDeletion(calendarItem, finalList, CalendarItemAction.GoogleDelete);
                     } else if ( !calendarItem.Status.Equals( "cancelled" ) )
                     {
                         calendarItem.Action |= CalendarItemAction.OutlookAdd;
@@ -284,6 +177,9 @@ namespace Outlook_Calendar_Sync {
 
             return finalList;
         }
+
+        
+
 
         /// <summary>
         /// Submits the changes requested to the Outlook and Google calendars
@@ -460,6 +356,166 @@ namespace Outlook_Calendar_Sync {
             }
 
             return list;
+        }
+
+        private void GoogleAdd(CalendarItem item, List<CalendarItem> list)
+        {
+            if (item.Recurrence != null)
+            {
+                if (item.IsFirstOccurence)
+                {
+                    item.Action |= CalendarItemAction.GoogleAdd;
+                    list.Add(item);
+                }
+            }
+            else
+            {
+                item.Action |= CalendarItemAction.GoogleAdd;
+                list.Add(item);
+            }
+        }
+
+        private void HandleCalendarItemDeletion(CalendarItem calendarItem, List<CalendarItem> finalList, CalendarItemAction action)
+        {
+            // It appears to have been deleted in the google cal.
+            // Do you want to delete it from outlook?
+            MessageBoxManager.Cancel = "Ignore";
+            MessageBoxManager.No = "Re-Add";
+            MessageBoxManager.Register();
+
+            var message = "";
+
+            if (action == CalendarItemAction.GoogleDelete)
+                message = "It appears the calendar event '" + calendarItem.Subject +
+                          "' was deleted from Outlook. Would you like to remove it from Google, add it back to Outlook, or ignore it forever?";
+            else
+                message = "It appears the calendar event '" + calendarItem.Subject +
+                          "' was deleted from Google. Would you like to remove it from Outlook, add it back to Google, or ignore it forever?";
+
+            var result = MessageBox.Show(
+                message,
+                "Deleted Event?",
+                MessageBoxButtons.YesNoCancel);
+
+            MessageBoxManager.Unregister();
+
+            if (result == DialogResult.Yes)
+            {
+                // Yes, delete it
+                calendarItem.Action &= (action == CalendarItemAction.GoogleDelete
+                    ? ~CalendarItemAction.OutlookDelete
+                    : ~CalendarItemAction.GoogleDelete);
+                calendarItem.Action |= action;
+                finalList.Add(calendarItem);
+            }
+            else if (result == DialogResult.No)
+            {
+                Archiver.Instance.Delete(calendarItem.CalendarItemIdentifier);
+
+                if (action == CalendarItemAction.GoogleDelete)
+                {
+                    calendarItem.Action |= CalendarItemAction.OutlookAdd;
+                    finalList.Add(calendarItem);
+                }
+                else
+                {
+                    calendarItem.Action |= CalendarItemAction.GoogleAdd;
+                    finalList.Add(calendarItem);
+                }
+            }
+            else if (result == DialogResult.Cancel)
+            {
+                // Just delete it from the archiver so we don't continue to get delete notifications about it.
+                Archiver.Instance.Ignore(calendarItem.CalendarItemIdentifier);
+            }
+        }
+
+        private void FindItemDifferences(List<CalendarItem> googleList, CalendarItem calendarItem, List<CalendarItem> finalList)
+        {
+            var item = googleList.Find(x =>
+                x.CalendarItemIdentifier.GoogleId.Equals(calendarItem.CalendarItemIdentifier.GoogleId));
+
+            // Get the differences
+            if (item != null && !item.IsContentsEqual(calendarItem))
+            {
+                // Should we do the same action to every calendar item?
+                if (PerformActionToAll)
+                {
+                    // Check and make sure there is an action to perform
+                    if (Action != CalendarItemAction.Nothing)
+                    {
+                        calendarItem.Action |= Action;
+                        finalList.Add(calendarItem);
+                    }
+                }
+                else
+                {
+                    // We are not performing the same action to every item, yet.
+
+                    // Are we performing a silentSync?
+                    if (m_silentSync && m_precedence != Precedence.None)
+                    {
+                        // Yep, setup the action to be performed
+                        PerformActionToAll = true;
+                        Action = m_precedence == Precedence.Outlook
+                            ? CalendarItemAction.GoogleUpdate
+                            : CalendarItemAction.OutlookUpdate;
+                    }
+                    else
+                    {
+                        // No we are not performing a silent sync
+
+                        var result = (DifferencesFormResults)DifferencesForm.Show(calendarItem, item);
+
+                        // Save Outlook Version Once
+                        if (result == DifferencesFormResults.KeepOutlookSingle)
+                        {
+                            calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                            finalList.Add(calendarItem);
+
+                            // Save Outlook Version for All
+                        }
+                        else if (result == DifferencesFormResults.KeepOutlookAll)
+                        {
+                            calendarItem.Action |= CalendarItemAction.GoogleUpdate;
+                            finalList.Add(calendarItem);
+
+                            Action = CalendarItemAction.GoogleUpdate;
+                            PerformActionToAll = true;
+
+                            // Save Google Version Once
+                        }
+                        else if (result == DifferencesFormResults.KeepGoogleSingle)
+                        {
+                            item.Action |= CalendarItemAction.OutlookUpdate;
+                            finalList.Add(item);
+
+                            // Save Google Version for All
+                        }
+                        else if (result == DifferencesFormResults.KeepGoogleAll)
+                        {
+                            item.Action |= CalendarItemAction.OutlookUpdate;
+                            finalList.Add(item);
+
+                            Action = CalendarItemAction.OutlookUpdate;
+                            PerformActionToAll = true;
+
+                            // Ignore All
+                        }
+                        else if (result == DifferencesFormResults.IgnoreAll)
+                        {
+                            PerformActionToAll = true;
+                            Action = CalendarItemAction.Nothing;
+                        }
+                    }
+                }
+            }
+
+            // Check if the item was deleted from google and just needs to be deleted from outlook
+            else if (item != null && item.Action.HasFlag(CalendarItemAction.OutlookDelete))
+            {
+                finalList.Add(item);
+            }
         }
 
 #if DEBUG

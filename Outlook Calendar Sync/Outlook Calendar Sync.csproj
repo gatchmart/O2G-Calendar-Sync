@@ -276,6 +276,7 @@
     <Compile Include="EventHasher.cs" />
     <Compile Include="GoogleSync.cs" />
     <Compile Include="GuidCreator.cs" />
+    <Compile Include="MessageBoxManager.cs" />
     <Compile Include="Models\Identifier.cs" />
     <Compile Include="InitialLoadForm.cs">
       <SubType>Form</SubType>
